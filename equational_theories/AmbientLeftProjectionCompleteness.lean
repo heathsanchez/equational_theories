@@ -11,22 +11,30 @@ def ambientLeftProjectionLaw (κ : Type) : MagmaLaw (Bool ⊕ κ) :=
 def ambientLeftProjectionCtx (κ : Type) : Ctx (Bool ⊕ κ) :=
   {ambientLeftProjectionLaw κ}
 
-/-- Derivability in the ambient left-projection theory still preserves the first leaf. No equality
-structure on κ is used. Dependent recursion keeps the indexed derivation endpoints explicit. -/
-def derive'_ambientLeftProjection_first_eq {κ β : Type} :
-    {x y : FreeMagma β} →
-      (ambientLeftProjectionCtx κ ⊢' x ≃ y) → x.first = y.first
-  | _, _, .SubstAx (E := E) h σ => by
-      have hE : E = ambientLeftProjectionLaw κ := by
-        simpa [ambientLeftProjectionCtx] using h
-      subst E
-      rfl
-  | _, _, .Ref => rfl
-  | _, _, .Sym d => (derive'_ambientLeftProjection_first_eq d).symm
-  | _, _, .Trans d₁ d₂ =>
-      (derive'_ambientLeftProjection_first_eq d₁).trans
-        (derive'_ambientLeftProjection_first_eq d₂)
-  | _, _, .Cong d₁ d₂ => derive'_ambientLeftProjection_first_eq d₁
+/-- Derivability in the ambient left-projection theory preserves the first leaf. No equality
+structure on κ is used; the proof interprets derivability in the concrete left-projection magma
+on β and applies soundness. -/
+theorem derive'_ambientLeftProjection_first_eq {κ β : Type} {x y : FreeMagma β}
+    (d : ambientLeftProjectionCtx κ ⊢' x ≃ y) : x.first = y.first := by
+  letI : Magma β := ⟨fun a _ => a⟩
+  have hmodel : β ⊧ ambientLeftProjectionCtx κ := by
+    intro E hE φ
+    have hEq : E = ambientLeftProjectionLaw κ := by
+      simpa [ambientLeftProjectionCtx] using hE
+    subst E
+    rfl
+  have eval_first : ∀ t : FreeMagma β, t ⬝ (fun b => b) = t.first := by
+    intro t
+    induction t with
+    | Leaf a => rfl
+    | Fork l r ihl ihr =>
+        simpa [FreeMagma.evalInMagma] using ihl
+  have hxy : x ⬝ (fun b => b) = y ⬝ (fun b => b) :=
+    (Soundness'_u d hmodel) (fun b => b)
+  calc
+    x.first = x ⬝ (fun b => b) := (eval_first x).symm
+    _ = y ⬝ (fun b => b) := hxy
+    _ = y.first := eval_first y
 
 /-- Every term reduces derivably to the leaf containing its first variable. This is Type-valued
 proof data, constructed directly by syntax recursion. -/
