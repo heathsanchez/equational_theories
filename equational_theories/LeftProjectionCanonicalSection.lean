@@ -11,19 +11,29 @@ def leftProjectionCtx : Ctx Bool :=
   {leftProjectionLaw}
 
 /-- Every derivable equality in the left-projection theory preserves the first leaf.
-Defined by dependent structural recursion on the derivation so the indexed endpoints remain visible. -/
-def derive'_leftProjection_first_eq {β : Type} :
-    {x y : FreeMagma β} → (leftProjectionCtx ⊢' x ≃ y) → x.first = y.first
-  | _, _, .SubstAx (E := E) h σ => by
-      have hE : E = leftProjectionLaw := by
-        simpa [leftProjectionCtx] using h
-      subst E
-      rfl
-  | _, _, .Ref => rfl
-  | _, _, .Sym d => (derive'_leftProjection_first_eq d).symm
-  | _, _, .Trans d₁ d₂ =>
-      (derive'_leftProjection_first_eq d₁).trans (derive'_leftProjection_first_eq d₂)
-  | _, _, .Cong d₁ d₂ => derive'_leftProjection_first_eq d₁
+Rather than recurse over the indexed derivation family, interpret the proof in the concrete
+left-projection magma on β and use soundness. -/
+theorem derive'_leftProjection_first_eq {β : Type} {x y : FreeMagma β}
+    (d : leftProjectionCtx ⊢' x ≃ y) : x.first = y.first := by
+  letI : Magma β := ⟨fun a _ => a⟩
+  have hmodel : β ⊧ leftProjectionCtx := by
+    intro E hE φ
+    have hEq : E = leftProjectionLaw := by
+      simpa [leftProjectionCtx] using hE
+    subst E
+    rfl
+  have eval_first : ∀ t : FreeMagma β, t ⬝ (fun b => b) = t.first := by
+    intro t
+    induction t with
+    | Leaf a => rfl
+    | Fork l r ihl ihr =>
+        simpa [FreeMagma.evalInMagma] using ihl
+  have hxy : x ⬝ (fun b => b) = y ⬝ (fun b => b) :=
+    (Soundness'_u d hmodel) (fun b => b)
+  calc
+    x.first = x ⬝ (fun b => b) := (eval_first x).symm
+    _ = y ⬝ (fun b => b) := hxy
+    _ = y.first := eval_first y
 
 /-- Every term is derivably equal to the leaf carrying its first variable.
 This is computational proof data in `Type`, so it is a `def`, not a proposition-valued theorem. -/
