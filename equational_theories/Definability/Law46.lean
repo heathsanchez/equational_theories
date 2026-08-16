@@ -1,6 +1,6 @@
 import Batteries.Data.List.Basic
 import equational_theories.Definability.Basic
-import equational_theories.Definability.EvalCongr
+import equational_theories.FreeMagmaEvalCongr
 import equational_theories.Definability.Simple
 import equational_theories.Equations.All
 
@@ -15,14 +15,10 @@ theorem Equation46_termDefinableFrom_equalShape {L : NatMagmaLaw}
   (hDisjoint : L.lhs.elems.val.Disjoint L.rhs.elems := by rw [List.Disjoint]; decide +kernel)
   : Law46.TermDefinableFrom L := by
   intro G M hGL
-  -- The new operation ignores its second argument, and plugs its first argument into every
-  -- variable of `L.lhs`.
   use ⟨fun x _ ↦ @Term.realize _ _ M.FOStructure _ (fun _ ↦ x) L.lhs.toTerm⟩
-  -- Since the two sides have the same shape, they agree on every constant assignment.
   have hboth : ∀ z : G, L.lhs ⬝ (fun _ ↦ z) = L.rhs ⬝ (fun _ ↦ z) := fun z ↦ by
     have h := congrArg (FreeMagma.evalInMagma (fun _ ↦ z)) hShape
     rwa [FreeMagma.SubstEval, FreeMagma.SubstEval] at h
-  -- The new operation is constant because the variable sets on the two sides are disjoint.
   have hconst : ∀ x x' : G, L.lhs ⬝ (fun _ ↦ x) = L.lhs ⬝ (fun _ ↦ x') := by
     intro x x'
     let ψ : ℕ → G := fun n ↦ if n ∈ L.lhs.elems.val then x else x'
