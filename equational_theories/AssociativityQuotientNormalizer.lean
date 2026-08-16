@@ -29,16 +29,21 @@ def rightAssocList {β : Type} : (xs : List β) → xs ≠ [] → FreeMagma β
 private theorem rightAssocList_proof_irrel {β : Type} (xs : List β)
     (h₁ h₂ : xs ≠ []) : rightAssocList xs h₁ = rightAssocList xs h₂ := by
   have hp : h₁ = h₂ := Subsingleton.elim _ _
-  subst hp
+  cases hp
   rfl
+
+private theorem rightAssocList_congr {β : Type} {xs ys : List β}
+    (h : xs = ys) (hxs : xs ≠ []) (hys : ys ≠ []) :
+    rightAssocList xs hxs = rightAssocList ys hys := by
+  subst ys
+  exact rightAssocList_proof_irrel xs hxs hys
 
 private theorem append_ne_nil_left {β : Type} {xs ys : List β} (hxs : xs ≠ []) :
     xs ++ ys ≠ [] := by
-  intro h
-  have hx : xs = [] := (List.append_eq_nil.mp h).1
-  exact hxs hx
+  cases xs with
+  | nil => exact False.elim (hxs rfl)
+  | cons a as => simp
 
-/-- One primitive associativity rewrite. -/
 def derive'_associativity_step {β : Type} (a b c : FreeMagma β) :
     associativityCtx ⊢' ((a ⋆ b) ⋆ c) ≃ (a ⋆ (b ⋆ c)) := by
   let σ : Option Bool → FreeMagma β := fun x =>
@@ -51,8 +56,6 @@ def derive'_associativity_step {β : Type} (a b c : FreeMagma β) :
   have h := derive'.SubstAx hmem σ
   simpa [associativityLaw, σ, FreeMagma.evalInMagma] using h
 
-/-- Concatenating two canonical nonempty trees is derivably equal to the canonical tree for the
-concatenated leaf list. -/
 def derive'_assoc_canon_append {β : Type} :
     (xs ys : List β) → (hxs : xs ≠ []) → (hys : ys ≠ []) →
       associativityCtx ⊢'
@@ -64,8 +67,7 @@ def derive'_assoc_canon_append {β : Type} :
       | nil =>
           cases ys with
           | nil => exact False.elim (hys rfl)
-          | cons b bs =>
-              exact derive'.Ref
+          | cons b bs => exact derive'.Ref
       | cons b bs =>
           let tail : List β := b :: bs
           have htail : tail ≠ [] := by simp [tail]
@@ -78,18 +80,14 @@ def derive'_assoc_canon_append {β : Type} :
             derive'.Cong derive'.Ref ih
           simpa [rightAssocList, tail] using derive'.Trans hs hc
 
-/-- Canonical right-associated normal form of a magma term. -/
 def associativityNormalize {β : Type} (t : FreeMagma β) : FreeMagma β :=
   rightAssocList t.toList (freeMagma_toList_ne_nil t)
 
 private theorem associativityNormalize_eq_of_toList_eq {β : Type} {x y : FreeMagma β}
     (h : x.toList = y.toList) : associativityNormalize x = associativityNormalize y := by
   unfold associativityNormalize
-  cases h
-  exact rightAssocList_proof_irrel _ _ _
+  exact rightAssocList_congr h _ _
 
-/-- Every term is derivably equal, using associativity alone, to its canonical right-associated
-normal form. -/
 def derive'_associativity_reduce {β : Type} :
     (t : FreeMagma β) → associativityCtx ⊢' t ≃ associativityNormalize t
   | .Leaf a => derive'.Ref
@@ -101,8 +99,6 @@ def derive'_associativity_reduce {β : Type} :
         l.toList r.toList (freeMagma_toList_ne_nil l) (freeMagma_toList_ne_nil r)
       simpa [associativityNormalize, FreeMagma.toList] using derive'.Trans dc da
 
-/-- Derivability under associativity preserves the full leaf sequence. Soundness is evaluated in
-the list magma under append, where term evaluation is exactly `toList`. -/
 theorem derive'_associativity_toList_eq {β : Type} {x y : FreeMagma β}
     (d : associativityCtx ⊢' x ≃ y) : x.toList = y.toList := by
   letI : Magma (List β) := ⟨List.append⟩
@@ -111,13 +107,16 @@ theorem derive'_associativity_toList_eq {β : Type} {x y : FreeMagma β}
     have hEq : E = associativityLaw := by
       simpa [associativityCtx] using hE
     subst E
-    simp [associativityLaw, FreeMagma.evalInMagma, List.append_assoc]
+    change (φ none ++ φ (some false)) ++ φ (some true) =
+      φ none ++ (φ (some false) ++ φ (some true))
+    exact List.append_assoc _ _ _
   have eval_toList : ∀ t : FreeMagma β, t ⬝ (fun b => [b]) = t.toList := by
     intro t
     induction t with
     | Leaf a => rfl
     | Fork l r ihl ihr =>
-        simp [FreeMagma.evalInMagma, ihl, ihr, FreeMagma.toList]
+        change (l ⬝ (fun b => [b])) ++ (r ⬝ (fun b => [b])) = l.toList ++ r.toList
+        rw [ihl, ihr]
   have hxy : x ⬝ (fun b => [b]) = y ⬝ (fun b => [b]) :=
     (Soundness'_u d hmodel) (fun b => [b])
   calc
@@ -125,7 +124,6 @@ theorem derive'_associativity_toList_eq {β : Type} {x y : FreeMagma β}
     _ = y ⬝ (fun b => [b]) := hxy
     _ = y.toList := eval_toList y
 
-/-- O30: associativity supplies O29's generic verified-normalizer resource in every codomain. -/
 def quotientNormalizerData_associativity {β : Type} :
     QuotientNormalizerData (β := β) associativityCtx where
   normalize := associativityNormalize
@@ -135,7 +133,6 @@ def quotientNormalizerData_associativity {β : Type} :
     exact associativityNormalize_eq_of_toList_eq (derive'_associativity_toList_eq d)
   reduces := derive'_associativity_reduce
 
-/-- Therefore the associative quotient admits a constructive global section in every codomain. -/
 theorem contextQuotientSections_associativity : ContextQuotientSections associativityCtx := by
   apply contextQuotientSections_of_normalizers
   intro β
