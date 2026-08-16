@@ -93,7 +93,7 @@ def supportRetractionData_ambientLeftProjection (κ : Type) :
     | inl b => cases b <;> rfl
     | inr k =>
         have : False := by
-          simpa [ambientLeftProjectionLaw, FreeMagma.Mem] using hx
+          simpa [ambientLeftProjectionLaw, MagmaLaw.Mem, FreeMagma.Mem] using hx
         exact False.elim this
 
 /-- All laws over this quotient get O10's representative-selection resource from the global
