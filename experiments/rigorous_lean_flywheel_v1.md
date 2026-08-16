@@ -25,15 +25,12 @@ Intervention: `equational_theories/FreeMagmaEvalCongr.lean`.
 Evidence:
 - repeated mechanism: OBSERVED;
 - source-level later-search compression on Law43: CANDIDATE;
-- third natural consumer: NOT FOUND;
 - kernel/build verdict: PENDING;
 - compounding: NOT CLAIMED.
 
-## Residual exposed after O1
-
-Law43 and Law46 still independently hand-built the bridge from a `FreeMagma` expression to a first-order `Set.TermDefinable` witness. Tarski543 contained a third independently written instance of the same bridge in its private `termDef` lemma.
-
 ## O2 — FreeMagma evaluator to term-definability
+
+Residual exposed after O1: Law43 and Law46 still hand-built the bridge from a `FreeMagma` expression to a first-order `Set.TermDefinable` witness. Tarski543 contained a third independent instance.
 
 Intervention: `equational_theories/Definability/FreeMagmaTerm.lean`.
 
@@ -41,76 +38,88 @@ Capability:
 
 > Any `FreeMagma (Fin 2)` evaluator is automatically term-definable in the underlying magma language.
 
-Candidate consumers:
-- Law43;
-- Law46;
-- Tarski543.
-
-The previous Tarski543 proof explicitly constructed nested first-order function syntax and simplified its realization. O2 reduces that to the mathematical FreeMagma expression plus one bridge application.
+Candidate consumers: Law43, Law46, Tarski543.
 
 Evidence:
 - repeated semantic mechanism across three sites: OBSERVED;
 - cross-site source-level reuse: CANDIDATE PASS;
 - first-order witness boilerplate compression: PASS at source level;
 - kernel/build verdict: PENDING;
-- natural developmental dependence: NOT TESTED;
-- compounding: NOT CLAIMED.
-
-## Residual exposed after O2
-
-Law43 and Law46 still separately performed the same adapter step:
-
-`FreeMagma α` → map each source variable to argument 0 or 1 → `FreeMagma (Fin 2)` → O2.
-
-Because O2 already exists, this adapter can be acquired by composition rather than by constructing another first-order witness proof.
+- natural developmental dependence: NOT TESTED.
 
 ## O3 — mapped-variable term-definability
 
-Derived capability in `Definability/FreeMagmaTerm.lean`:
+Residual exposed after O2: Law43 and Law46 still separately mapped source variables into binary arguments before invoking O2.
 
-`FreeMagma.eval_comp_termDefinable`.
+Derived capability: `FreeMagma.eval_comp_termDefinable`.
 
-Statement:
+> For any `t : FreeMagma α` and `σ : α → Fin 2`, the evaluator `v ↦ t ⬝ (v ∘ σ)` is term-definable.
 
-> For any `t : FreeMagma α` and any map `σ : α → Fin 2`, the binary evaluator `v ↦ t ⬝ (v ∘ σ)` is term-definable.
+O3 is obtained by composing `fmapHom`, O2, and `evalInMagma_fmapHom`; Law43 and Law46 now invoke O3 directly.
 
-Construction cost with O2 installed is essentially one composition:
+Verdict: `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`.
 
-`fmapHom σ t` + O2 + `evalInMagma_fmapHom`.
+The reason is structural: before O2, O3 would require another first-order witness proof; after O2, it is a small composition of existing capital.
 
-Law43 and Law46 now invoke O3 directly rather than explicitly constructing the mapped `FreeMagma (Fin 2)` and invoking O2 themselves.
+## Live source-distinct target: open issue #499
 
-## O2 → O3 developmental signature
+The next target was deliberately moved outside the definability repair family: upstream open issue #499 asks whether the use of choice in the completeness proof can be removed.
 
-This is the first recursive-cost candidate in the branch:
+The existing proof uses `PhiAsSubst_aux` to lift an entire arbitrary quotient-valued valuation `φ : β → FreeMagmaWithLaws γ Γ` to representatives `σ : β → FreeMagma γ` using `Classical.axiomOfChoice`.
 
-- before O2, proving O3 directly would require reconstructing the first-order witness bridge;
-- after O2, O3 is a small derived theorem obtained by composition with an existing FreeMagma law;
-- O3 then compresses two existing consumers.
+Residual classification after inspection:
 
-Verdict: `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION`.
+`REPRESENTATION / SCOPE FAILURE`, not search failure.
 
-This is not yet `COMPOUNDING` because:
-- the branch has no Lean kernel/build verdict;
-- O3 was deliberately sought from the residual exposed by O2 rather than arising in a frozen later natural episode;
-- no matched cold/sham/disabled acquisition experiment has been run.
+The law being checked only evaluates finitely many variables, but the proof asks for representatives of every variable in the valuation. This is a global-state lift for a finite-support observation.
+
+That distinction is exactly what O1 records.
+
+## O4 — finite-support quotient lifting
+
+New candidate file:
+
+`equational_theories/CompletenessFiniteSupport.lean`
+
+Main ingredients:
+
+1. `PhiAsSubst_onLawSupport`: for a single law with decidable variable equality, collect only the variables in `lhs.elems ∪ rhs.elems`, choose representatives for that finite list using repeated `Quotient.exists_rep`, and use one obtained representative as the default outside support.
+2. `FreeMagmaWithLaws.isModel_decidableVars`: use O1 (`evalInMagma_congr`) to replace the original quotient valuation by the finite-support substitution only where each side of the law can observe it.
+3. `Completeness'_decidableVars`: Type-0 completeness for contexts whose variable language has `DecidableEq`, without invoking the global `PhiAsSubst` step.
+4. `Completeness_decidableVars` and `CompletenessNat_noGlobalChoice`: same-language and project-standard Nat specializations.
+
+## Why O4 matters to the flywheel
+
+This is the first source-distinct transfer where accumulated capability materially changes problem formulation:
+
+`O1 support law` → notice global valuation lifting is unnecessary → replace infinite/global choice-shaped obligation with finite support lifting → candidate solution to a live open metatheorem problem under a scoped assumption.
+
+Without O1, the obvious route is to keep trying to construct the global representative function. With O1 installed, values outside support are formally irrelevant and can be forgotten.
+
+Candidate verdict:
+
+`CANDIDATE_SOURCE_DISTINCT_TRANSFER_O1_TO_COMPLETENESS`
+
+`CANDIDATE_O4_FINITE_SUPPORT_QUOTIENT_LIFT`
+
+This still does NOT close issue #499 in full generality: the new result assumes decidable equality on the context variable type and currently targets Type-0 completeness. The fully general quotient formulation may genuinely retain a choice-shaped obstruction; that has not been proved impossible.
 
 ## Infrastructure residual
 
 GitHub reports zero Actions runs for the experiment branch. The available integration receives HTTP 403 when querying repository Actions permissions. Therefore the absence of CI is classified strictly as infrastructure/verification unavailable, not as semantic success or failure.
 
-## Required next separator
+No O1/O2/O3/O4 theorem is ADMITTED until Lean kernel/build validation is obtained.
 
-Find or generate a live natural proof residual E3 before inspecting its proof solution and run matched acquisition arms:
+## Required next separators
 
-1. cold base;
-2. O1 only;
-3. O1 + O2;
-4. O1 + O2 + O3;
-5. sham helpers with matched context/size;
-6. O3 present but disabled.
-
-A developmental positive requires that the accumulated capability state changes acquisition under a frozen budget: solve/no-solve, calls/tokens/attempts, time-to-first-kernel-valid proof, or which next reusable abstraction is discovered.
+1. Kernel/build the experiment branch, especially:
+   - `FreeMagmaEvalCongr.lean`;
+   - `Definability/FreeMagmaTerm.lean`;
+   - Law43 / Law46 / Tarski543 consumers;
+   - `CompletenessFiniteSupport.lean`.
+2. Run an axiom audit on `Completeness'_decidableVars` / `Completeness_decidableVars` to determine whether `Classical.choice` is absent from the transitive theorem dependencies.
+3. If O4 survives, compare cold versus O1-enabled acquisition on the frozen #499 target or a matched synthetic reconstruction where the solution text is hidden.
+4. Only after that test a new natural problem with O1–O4 installed.
 
 ## Current verdicts
 
@@ -121,5 +130,9 @@ A developmental positive requires that the accumulated capability state changes 
 `RETAIN_CANDIDATE_O3_MAPPED_TERM_BRIDGE`
 
 `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`
+
+`CANDIDATE_SOURCE_DISTINCT_TRANSFER_O1_TO_COMPLETENESS`
+
+`RETAIN_CANDIDATE_O4_FINITE_SUPPORT_QUOTIENT_LIFT`
 
 No frontier-expansion or natural compounding claim is licensed yet.
