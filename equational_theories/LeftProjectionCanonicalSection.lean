@@ -10,26 +10,27 @@ def leftProjectionLaw : MagmaLaw Bool :=
 def leftProjectionCtx : Ctx Bool :=
   {leftProjectionLaw}
 
-/-- Every derivable equality in the left-projection theory preserves the first leaf. -/
-theorem derive'_leftProjection_first_eq {β : Type} {x y : FreeMagma β}
-    (d : leftProjectionCtx ⊢' x ≃ y) : x.first = y.first := by
-  induction d with
-  | @SubstAx E h σ =>
+/-- Every derivable equality in the left-projection theory preserves the first leaf.
+Defined by dependent structural recursion on the derivation so the indexed endpoints remain visible. -/
+def derive'_leftProjection_first_eq {β : Type} :
+    {x y : FreeMagma β} → (leftProjectionCtx ⊢' x ≃ y) → x.first = y.first
+  | _, _, .SubstAx (E := E) h σ => by
       have hE : E = leftProjectionLaw := by
         simpa [leftProjectionCtx] using h
       subst E
       rfl
-  | Ref => rfl
-  | Sym d ih => exact ih.symm
-  | Trans d₁ d₂ ih₁ ih₂ => exact ih₁.trans ih₂
-  | Cong d₁ d₂ ih₁ ih₂ => exact ih₁
+  | _, _, .Ref => rfl
+  | _, _, .Sym d => (derive'_leftProjection_first_eq d).symm
+  | _, _, .Trans d₁ d₂ =>
+      (derive'_leftProjection_first_eq d₁).trans (derive'_leftProjection_first_eq d₂)
+  | _, _, .Cong d₁ d₂ => derive'_leftProjection_first_eq d₁
 
-/-- Every term is derivably equal to the leaf carrying its first variable. -/
-theorem derive'_leftProjection_reduce {β : Type} (t : FreeMagma β) :
-    leftProjectionCtx ⊢' t ≃ Lf t.first := by
-  induction t with
-  | Leaf a => exact derive'.Ref
-  | Fork l r ihl ihr =>
+/-- Every term is derivably equal to the leaf carrying its first variable.
+This is computational proof data in `Type`, so it is a `def`, not a proposition-valued theorem. -/
+def derive'_leftProjection_reduce {β : Type} :
+    (t : FreeMagma β) → leftProjectionCtx ⊢' t ≃ Lf t.first
+  | .Leaf a => derive'.Ref
+  | .Fork l r => by
       let σ : Bool → FreeMagma β := fun b =>
         match b with
         | false => l
@@ -39,7 +40,7 @@ theorem derive'_leftProjection_reduce {β : Type} (t : FreeMagma β) :
       have hax0 := derive'.SubstAx hmem σ
       have hax : leftProjectionCtx ⊢' (l ⋆ r) ≃ l := by
         simpa [leftProjectionLaw, σ, FreeMagma.evalInMagma] using hax0
-      simpa [FreeMagma.first] using derive'.Trans hax ihl
+      exact derive'.Trans hax (derive'_leftProjection_reduce l)
 
 /-- Canonical representative of a quotient class: its first leaf. Well-definedness follows from
 first-leaf invariance of derivability, not from any equality decision on β. -/
