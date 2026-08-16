@@ -19,9 +19,21 @@ private theorem ambient_freeMagma_toList_ne_nil {β : Type} (t : FreeMagma β) :
 
 private theorem ambient_append_ne_nil_left {β : Type} {xs ys : List β} (hxs : xs ≠ []) :
     xs ++ ys ≠ [] := by
-  intro h
-  have hx : xs = [] := (List.append_eq_nil.mp h).1
-  exact hxs hx
+  cases xs with
+  | nil => exact False.elim (hxs rfl)
+  | cons a as => simp
+
+private theorem ambient_rightAssocList_proof_irrel {β : Type} (xs : List β)
+    (h₁ h₂ : xs ≠ []) : rightAssocList xs h₁ = rightAssocList xs h₂ := by
+  have hp : h₁ = h₂ := Subsingleton.elim _ _
+  cases hp
+  rfl
+
+private theorem ambient_rightAssocList_congr {β : Type} {xs ys : List β}
+    (h : xs = ys) (hxs : xs ≠ []) (hys : ys ≠ []) :
+    rightAssocList xs hxs = rightAssocList ys hys := by
+  subst ys
+  exact ambient_rightAssocList_proof_irrel xs hxs hys
 
 /-- Primitive associativity rewrite from the ambient axiom. -/
 def derive'_ambientAssociativity_step {κ β : Type} (a b c : FreeMagma β) :
@@ -53,7 +65,7 @@ def derive'_ambientAssoc_canon_append {κ β : Type} :
       | cons b bs =>
           let tail : List β := b :: bs
           have htail : tail ≠ [] := by simp [tail]
-          have ih := derive'_ambientAssoc_canon_append tail ys htail hys
+          have ih := derive'_ambientAssoc_canon_append (κ := κ) tail ys htail hys
           have hs := derive'_ambientAssociativity_step
             (κ := κ) (Lf a) (rightAssocList tail htail) (rightAssocList ys hys)
           have hc : ambientAssociativityCtx κ ⊢'
@@ -70,11 +82,7 @@ private theorem ambientAssociativityNormalize_eq_of_toList_eq {β : Type}
     {x y : FreeMagma β} (h : x.toList = y.toList) :
     ambientAssociativityNormalize x = ambientAssociativityNormalize y := by
   unfold ambientAssociativityNormalize
-  cases h
-  have hp : ambient_freeMagma_toList_ne_nil x = ambient_freeMagma_toList_ne_nil y :=
-    Subsingleton.elim _ _
-  cases hp
-  rfl
+  exact ambient_rightAssocList_congr h _ _
 
 /-- Every term reduces to the canonical right-associated tree under the ambient associativity axiom. -/
 def derive'_ambientAssociativity_reduce {κ β : Type} :
@@ -98,13 +106,16 @@ theorem derive'_ambientAssociativity_toList_eq {κ β : Type} {x y : FreeMagma �
     have hEq : E = ambientAssociativityLaw κ := by
       simpa [ambientAssociativityCtx] using hE
     subst E
-    simp [ambientAssociativityLaw, FreeMagma.evalInMagma, List.append_assoc]
+    change (φ (Sum.inl none) ++ φ (Sum.inl (some false))) ++ φ (Sum.inl (some true)) =
+      φ (Sum.inl none) ++ (φ (Sum.inl (some false)) ++ φ (Sum.inl (some true)))
+    exact List.append_assoc _ _ _
   have eval_toList : ∀ t : FreeMagma β, t ⬝ (fun b => [b]) = t.toList := by
     intro t
     induction t with
     | Leaf a => rfl
     | Fork l r ihl ihr =>
-        simp [FreeMagma.evalInMagma, ihl, ihr, FreeMagma.toList]
+        change (l ⬝ (fun b => [b])) ++ (r ⬝ (fun b => [b])) = l.toList ++ r.toList
+        rw [ihl, ihr]
   have hxy : x ⬝ (fun b => [b]) = y ⬝ (fun b => [b]) :=
     (Soundness'_u d hmodel) (fun b => [b])
   calc
