@@ -36,9 +36,8 @@ theorem Equation43_termDefinableFrom_swapped_args {L : NatMagmaLaw}
         simp at ha01
         rcases ha01 with rfl | rfl <;> simp [FreeMagma.evalInMagma]
   · let σ : ℕ → Fin 2 := fun n ↦ if n = 0 then 0 else 1
-    let t : FreeMagma (Fin 2) := FreeMagma.fmapHom σ L.lhs
-    simpa [Magma.FinArityOp, t, σ, FreeMagma.evalInMagma_fmapHom, Function.comp_def] using
-      (FreeMagma.eval_termDefinable (G := G) t)
+    simpa [Magma.FinArityOp, σ, Function.comp_def] using
+      (FreeMagma.eval_comp_termDefinable (G := G) L.lhs σ)
 
 /-- The commutative law 43 `x ◇ y = y ◇ x` is TermDefinable from 40 `x ◇ x = y ◇ y`. -/
 theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=
