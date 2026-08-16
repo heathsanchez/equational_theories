@@ -52,3 +52,13 @@ theorem eval_has_occurrence_rep {δ α β : Type} (Γ : Ctx δ)
     ∃ u : FreeMagma β, t ⬝ φ = embed Γ u := by
   obtain ⟨u, hu⟩ := occurrenceLift_exists Γ φ t
   exact ⟨u, occurrenceLift_eval_eq_embed hu⟩
+
+/-- Representatives independently chosen for two occurrences of the same source variable are
+already coherent in the quotient: they are derivably equal from `Γ`. Thus O6 obtains proof-level
+coherence without choosing a canonical representative. -/
+theorem occurrence_representatives_derivably_equal {δ α β : Type} {Γ : Ctx δ}
+    {φ : α → FreeMagmaWithLaws β Γ} {x : α} {r s : FreeMagma β}
+    (hr : φ x = embed Γ r) (hs : φ x = embed Γ s) :
+    Nonempty (Γ ⊢' r ≃ s) := by
+  apply FreeMagmaWithLaws.eq.mp
+  exact hr.symm.trans hs
