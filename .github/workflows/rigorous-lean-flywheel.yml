@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel-o27
+      - agent/rigorous-lean-capital-flywheel-o29
   workflow_dispatch:
 
 concurrency:
@@ -29,25 +29,26 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O27 dependency cone
+      - name: Build O29 dependency cone
         run: |
-          lake build equational_theories.CanonicalQuotientSection
           lake build equational_theories.CompletenessCanonicalSections
+          lake build equational_theories.QuotientNormalizerSection
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.CompletenessCanonicalSections
-          #print axioms supportQuotientLift_of_contextSections
-          #print axioms Completeness'_canonicalSections
-          #print axioms contextQuotientSections_empty
+          import equational_theories.QuotientNormalizerSection
+          #print axioms quotientRepresentativeData_of_normalizer
+          #print axioms quotientRepresentativeSection_of_normalizer
+          #print axioms contextQuotientSections_of_normalizers
+          #print axioms Completeness'_normalizers
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O27 axiom audit or sorry dependency.'
+            echo 'Invalid O29 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(supportQuotientLift_of_contextSections|Completeness'_canonicalSections|contextQuotientSections_empty).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O27 targets.'
+          if grep -E "(quotientRepresentativeData_of_normalizer|quotientRepresentativeSection_of_normalizer|contextQuotientSections_of_normalizers|Completeness'_normalizers).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O29 targets.'
             exit 1
           fi
