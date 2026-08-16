@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel-o17
+      - agent/rigorous-lean-capital-flywheel-o18
   workflow_dispatch:
 
 concurrency:
@@ -29,26 +29,25 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O17 dependency cone
+      - name: Build O18 dependency cone
         run: |
-          lake build equational_theories.OccurrenceMaterializationEqualityBoundary
+          lake build equational_theories.OccurrenceMaterializationPropBoundary
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.OccurrenceMaterializationEqualityBoundary
-          #print axioms FreeMagma.twoLeafMemPositionData_of_decidableEq
-          #print axioms FreeMagma.eq_of_twoLeaf_positions_eq
-          #print axioms FreeMagma.twoLeaf_positions_eq_of_eq
-          #print axioms FreeMagma.decidableEq_of_twoLeafMemPositionData
-          #print axioms FreeMagma.twoLeafMaterialization_iff_decidableEq_data
+          import equational_theories.OccurrenceMaterializationPropBoundary
+          #print axioms FreeMagma.eqOrNe_of_twoLeafMemPositionData
+          #print axioms FreeMagma.equalitySplit_of_pairwiseTwoLeafMaterialization
+          #print axioms FreeMagma.pairwiseTwoLeafMaterialization_of_nonempty_decidableEq
+          #print axioms FreeMagma.pairwiseTwoLeafMaterialization_of_uniform
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O17 axiom audit or sorry dependency.'
+            echo 'Invalid O18 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(twoLeafMemPositionData_of_decidableEq|eq_of_twoLeaf_positions_eq|twoLeaf_positions_eq_of_eq|decidableEq_of_twoLeafMemPositionData|twoLeafMaterialization_iff_decidableEq_data).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O17 targets.'
+          if grep -E "(eqOrNe_of_twoLeafMemPositionData|equalitySplit_of_pairwiseTwoLeafMaterialization|pairwiseTwoLeafMaterialization_of_nonempty_decidableEq|pairwiseTwoLeafMaterialization_of_uniform).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O18 targets.'
             exit 1
           fi
