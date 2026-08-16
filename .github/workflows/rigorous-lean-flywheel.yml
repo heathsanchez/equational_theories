@@ -7,6 +7,10 @@ on:
       - agent/rigorous-lean-capital-flywheel-o5
   workflow_dispatch:
 
+concurrency:
+  group: rigorous-lean-flywheel-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
