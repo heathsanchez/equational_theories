@@ -39,6 +39,11 @@ jobs:
           lake build equational_theories.CompletenessFiniteSupport
           lake build equational_theories.FiniteOverrideObstruction
           lake build equational_theories.OccurrenceLift
+          lake build equational_theories.SupportLocalDerivation
+          lake build equational_theories.SupportSemanticBoundary
+          lake build equational_theories.CompletenessSupportResources
+          lake build equational_theories.CompletenessSingletonSupport
+          lake build equational_theories.CompletenessIndexedSupport
       - name: Axiom audit
         run: |
           set -o pipefail
@@ -47,6 +52,11 @@ jobs:
           import equational_theories.CompletenessFiniteSupport
           import equational_theories.FiniteOverrideObstruction
           import equational_theories.OccurrenceLift
+          import equational_theories.SupportLocalDerivation
+          import equational_theories.SupportSemanticBoundary
+          import equational_theories.CompletenessSupportResources
+          import equational_theories.CompletenessSingletonSupport
+          import equational_theories.CompletenessIndexedSupport
           #print axioms FreeMagma.evalInMagma_congr
           #print axioms FreeMagma.eval_termDefinable
           #print axioms FreeMagma.eval_comp_termDefinable
@@ -62,13 +72,23 @@ jobs:
           #print axioms occurrenceLift_eval_eq_embed
           #print axioms eval_has_occurrence_rep
           #print axioms occurrence_representatives_derivably_equal
+          #print axioms FreeMagma.supportSubst_eq_eval_of_agree
+          #print axioms deriveSupport'_of_derive'
+          #print axioms supportExtension_iff_supportRetract
+          #print axioms FreeMagmaWithLaws.isModel_supportResources
+          #print axioms Completeness'_supportResources
+          #print axioms supportRetract_of_singletonSupport
+          #print axioms Completeness'_singletonSupport
+          #print axioms chooseFinFamily
+          #print axioms supportQuotientLift_of_indexing
+          #print axioms Completeness'_indexedSupport
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq|occurrenceLift_exists|occurrenceLift_eval_eq_embed|eval_has_occurrence_rep|occurrence_representatives_derivably_equal).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice remains in an O4/O5/O6 target.'
+          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq|occurrenceLift_exists|occurrenceLift_eval_eq_embed|eval_has_occurrence_rep|occurrence_representatives_derivably_equal|supportSubst_eq_eval_of_agree|deriveSupport'_of_derive'|supportExtension_iff_supportRetract|isModel_supportResources|Completeness'_supportResources|supportRetract_of_singletonSupport|Completeness'_singletonSupport|chooseFinFamily|supportQuotientLift_of_indexing|Completeness'_indexedSupport).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in a verified flywheel target.'
             exit 1
           fi
