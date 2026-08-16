@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - agent/rigorous-lean-capital-flywheel
+      - agent/rigorous-lean-capital-flywheel-o5
   workflow_dispatch:
 
 permissions:
@@ -28,12 +29,14 @@ jobs:
           lake build equational_theories.Definability.Law46
           lake build equational_theories.Definability.Tarski543
           lake build equational_theories.CompletenessFiniteSupport
+          lake build equational_theories.FiniteOverrideObstruction
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
           import equational_theories.Definability.FreeMagmaTerm
           import equational_theories.CompletenessFiniteSupport
+          import equational_theories.FiniteOverrideObstruction
           #print axioms FreeMagma.evalInMagma_congr
           #print axioms FreeMagma.eval_termDefinable
           #print axioms FreeMagma.eval_comp_termDefinable
@@ -43,6 +46,7 @@ jobs:
           #print axioms Completeness'_decidableVars
           #print axioms Completeness_decidableVars
           #print axioms CompletenessNat_noGlobalChoice
+          #print axioms decidableEq_of_onePointOverride
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
