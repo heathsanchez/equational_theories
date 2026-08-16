@@ -34,6 +34,13 @@ def supportSubst {α β : Type} (E : MagmaLaw α)
   FreeMagma.supportSubst E.lhs (fun a h => σ a (.inl h)) ≃
     FreeMagma.supportSubst E.rhs (fun a h => σ a (.inr h))
 
+/-- Membership-proof choice cannot create inconsistent substitutions for the same variable:
+Lean's proof irrelevance forces all proof-indexed outputs at a fixed variable to agree. -/
+theorem supportAssignment_proof_irrel {α β : Type} {E : MagmaLaw α}
+    (σ : (a : α) → E.Mem a → FreeMagma β) (a : α) (h₁ h₂ : E.Mem a) :
+    σ a h₁ = σ a h₂ := by
+  rw [Subsingleton.elim h₁ h₂]
+
 /-- A total law substitution compiles into the support-local representation exactly. -/
 theorem supportSubst_of_total {α β : Type} (E : MagmaLaw α) (σ : α → FreeMagma β) :
     E.supportSubst (fun a _ => σ a) = (E.lhs ⬝ σ ≃ E.rhs ⬝ σ) := by
