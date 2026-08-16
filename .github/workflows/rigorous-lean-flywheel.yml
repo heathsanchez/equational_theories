@@ -37,16 +37,19 @@ jobs:
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
           import equational_theories.SupportLocalConservativity
-          #print axioms totalizeSupportAssignment_of_retract
-          #print axioms derive'_of_deriveSupport'_retractable
-          #print axioms derive'_of_deriveSupport'_via_decidable
+          #print axioms SupportRetractionData.toSupportRetract
+          #print axioms totalizeSupportAssignment_of_data_agree
+          #print axioms derive'_of_deriveSupport'_retractionData
+          #print axioms supportRetractionData_of_decidableEq
+          #print axioms derive'_of_deriveSupport'_via_retractionData_decidable
+          #print axioms totalization_merely_exists_of_retract
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid O12 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(totalizeSupportAssignment_of_retract|derive'_of_deriveSupport'_retractable|derive'_of_deriveSupport'_via_decidable).*Classical.choice" /tmp/axioms.txt; then
+          if grep -E "(toSupportRetract|totalizeSupportAssignment_of_data_agree|derive'_of_deriveSupport'_retractionData|supportRetractionData_of_decidableEq|derive'_of_deriveSupport'_via_retractionData_decidable|totalization_merely_exists_of_retract).*Classical.choice" /tmp/axioms.txt; then
             echo 'Classical.choice unexpectedly appears in O12 targets.'
             exit 1
           fi
