@@ -54,7 +54,7 @@ jobs:
           #print axioms totalSubst_of_supportSection
           #print axioms supportIndexedSection_of_supportFamilyChoice
           #print axioms supportQuotientLift_of_supportFamilyChoice
-          #print axioms twoLeafMemPositionData_of_supportFamilyChoice
+          #print axioms nonempty_twoLeafMemPositionData_of_supportFamilyChoice
           #print axioms eqOrNe_of_twoLeafSupportFamilyChoice
           #print axioms supportFamilyChoice_of_decidableEq
           #print axioms supportFamilyChoice_iff_nonempty_positionData
@@ -77,7 +77,7 @@ jobs:
             echo 'Invalid O19-O24 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(supportSubstitutionExtension_of_supportRetract|supportRetract_of_supportSubstitutionExtension|supportRetract_iff_allSupportSubstitutionExtensions|supportQuotientLift_iff_supportIndexedSection|totalSubst_of_supportSection|supportIndexedSection_of_supportFamilyChoice|supportQuotientLift_of_supportFamilyChoice|twoLeafMemPositionData_of_supportFamilyChoice|eqOrNe_of_twoLeafSupportFamilyChoice|supportFamilyChoice_of_decidableEq|supportFamilyChoice_iff_nonempty_positionData|nonempty_positionData_iff_supportFamilyChoice|supportQuotientLift_of_nonempty_positionData|derive'_empty_eq|unembedEmpty|embed_unembedEmpty|supportQuotientLift_empty|supportIndexedQuotientSection_empty|universalEqualitySplit_of_emptyLiftImpliesSplit|supportQuotientLift_of_quotientRepresentativeData|supportQuotientLift_of_globalSections|quotientRepresentativeData_empty|quotientRepresentativeSection_empty|supportQuotientLift_empty_via_globalSection).*Classical.choice" /tmp/axioms.txt; then
+          if grep -E "(supportSubstitutionExtension_of_supportRetract|supportRetract_of_supportSubstitutionExtension|supportRetract_iff_allSupportSubstitutionExtensions|supportQuotientLift_iff_supportIndexedSection|totalSubst_of_supportSection|supportIndexedSection_of_supportFamilyChoice|supportQuotientLift_of_supportFamilyChoice|nonempty_twoLeafMemPositionData_of_supportFamilyChoice|eqOrNe_of_twoLeafSupportFamilyChoice|supportFamilyChoice_of_decidableEq|supportFamilyChoice_iff_nonempty_positionData|nonempty_positionData_iff_supportFamilyChoice|supportQuotientLift_of_nonempty_positionData|derive'_empty_eq|unembedEmpty|embed_unembedEmpty|supportQuotientLift_empty|supportIndexedQuotientSection_empty|universalEqualitySplit_of_emptyLiftImpliesSplit|supportQuotientLift_of_quotientRepresentativeData|supportQuotientLift_of_globalSections|quotientRepresentativeData_empty|quotientRepresentativeSection_empty|supportQuotientLift_empty_via_globalSection).*Classical.choice" /tmp/axioms.txt; then
             echo 'Classical.choice unexpectedly appears in O19-O24 targets.'
             exit 1
           fi
