@@ -6,7 +6,7 @@ open Law
 
 /-- A support retraction is enough to totalize one support-local substitution while preserving its
 value on every variable visible to the axiom. No decidable equality test is required. -/
-theorem totalizeSupportAssignment_of_retract {α β : Type*} {E : MagmaLaw α}
+theorem totalizeSupportAssignment_of_retract {α β : Type} {E : MagmaLaw α}
     (hret : SupportRetract E)
     (σ : (a : α) → E.Mem a → FreeMagma β) :
     ∃ τ : α → FreeMagma β, ∀ a (ha : E.Mem a), σ a ha = τ a := by
@@ -21,8 +21,8 @@ theorem totalizeSupportAssignment_of_retract {α β : Type*} {E : MagmaLaw α}
 /-- The support-local calculus is conservative over the existing uniform-substitution calculus
 whenever every axiom in the context has retractable support. This replaces the previous global
 `DecidableEq α` assumption by the exact structural resource exposed independently on the semantic
-side in O9. -/
-def derive'_of_deriveSupport'_retractable {α β : Type*}
+side in O9. This statement remains deliberately Type-0, matching O9's verified scope. -/
+def derive'_of_deriveSupport'_retractable {α β : Type}
     {Γ : Ctx α} {E : MagmaLaw β}
     (hret : ∀ A, A ∈ Γ → SupportRetract A) :
     deriveSupport' Γ E → derive' Γ E
@@ -45,7 +45,7 @@ def derive'_of_deriveSupport'_retractable {α β : Type*}
 
 /-- Decidable equality recovers the older reverse translation only by supplying support
 retractions. -/
-def derive'_of_deriveSupport'_via_decidable {α β : Type*} [DecidableEq α]
+def derive'_of_deriveSupport'_via_decidable {α β : Type} [DecidableEq α]
     {Γ : Ctx α} {E : MagmaLaw β} : deriveSupport' Γ E → derive' Γ E :=
   derive'_of_deriveSupport'_retractable
     (fun A _ => supportRetract_of_decidableEq A)
