@@ -1,0 +1,46 @@
+name: Rigorous Lean Flywheel
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: lake update
+      - name: Build flywheel capabilities
+        run: |
+          lake build equational_theories.FreeMagmaEvalCongr
+          lake build equational_theories.Definability.FreeMagmaTerm
+          lake build equational_theories.Definability.Law43
+          lake build equational_theories.Definability.Law46
+          lake build equational_theories.Definability.Tarski543
+          lake build equational_theories.CompletenessFiniteSupport
+      - name: Axiom audit
+        run: |
+          cat > /tmp/AxiomAudit.lean <<'EOF'
+          import equational_theories.CompletenessFiniteSupport
+          #print axioms FreeMagma.evalInMagma_congr
+          #print axioms FreeMagma.eval_termDefinable
+          #print axioms FreeMagma.eval_comp_termDefinable
+          #print axioms FreeMagmaWithLaws.isModel_decidableVars
+          #print axioms Completeness'_decidableVars
+          #print axioms Completeness_decidableVars
+          #print axioms CompletenessNat_noGlobalChoice
+          EOF
+          lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
+          if grep -E 'Classical.choice|propext|Quot.sound|sorryAx' /tmp/axioms.txt; then
+            echo 'Axiom audit found dependencies requiring review.'
+          fi
