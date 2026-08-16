@@ -38,6 +38,7 @@ jobs:
           lake build equational_theories.Definability.Tarski543
           lake build equational_theories.CompletenessFiniteSupport
           lake build equational_theories.FiniteOverrideObstruction
+          lake build equational_theories.OccurrenceLift
       - name: Axiom audit
         run: |
           set -o pipefail
@@ -45,6 +46,7 @@ jobs:
           import equational_theories.Definability.FreeMagmaTerm
           import equational_theories.CompletenessFiniteSupport
           import equational_theories.FiniteOverrideObstruction
+          import equational_theories.OccurrenceLift
           #print axioms FreeMagma.evalInMagma_congr
           #print axioms FreeMagma.eval_termDefinable
           #print axioms FreeMagma.eval_comp_termDefinable
@@ -56,13 +58,17 @@ jobs:
           #print axioms CompletenessNat_noGlobalChoice
           #print axioms weakEqDecision_of_onePointOverride
           #print axioms eqOrNe_of_onePointOverride_of_stableEq
+          #print axioms occurrenceLift_exists
+          #print axioms occurrenceLift_eval_eq_embed
+          #print axioms eval_has_occurrence_rep
+          #print axioms occurrence_representatives_derivably_equal
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice remains in an O4/O5 target.'
+          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq|occurrenceLift_exists|occurrenceLift_eval_eq_embed|eval_has_occurrence_rep|occurrence_representatives_derivably_equal).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice remains in an O4/O5/O6 target.'
             exit 1
           fi
