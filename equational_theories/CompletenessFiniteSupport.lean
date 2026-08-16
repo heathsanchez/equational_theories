@@ -66,10 +66,20 @@ theorem FreeMagmaWithLaws.isModel_decidableVars {α} [DecidableEq α]
       intro x hx
       exact hR x hx
 
-/-- The project-standard `Nat`-variable completeness theorem can use the finite-support model and
-therefore does not need the global `PhiAsSubst` choice step. This is kept separate from the existing
-general theorem until kernel/axiom validation is available. -/
-theorem CompletenessNat_noGlobalChoice {Γ : Ctx Nat} {E : MagmaLaw Nat}
-    (h : Γ ⊧ E) : Nonempty (Γ ⊢' E) := by
+/-- Type-0 completeness without the global `PhiAsSubst` choice step, for contexts whose variable
+language has decidable equality. -/
+theorem Completeness'_decidableVars {α β : Type} [DecidableEq α]
+    {Γ : Ctx α} {E : MagmaLaw β} (h : Γ ⊧ E) : Nonempty (Γ ⊢' E) := by
   apply FreeMagmaWithLaws.isDerives
-  exact h _ (FreeMagmaWithLaws.isModel_decidableVars Nat Γ)
+  exact h _ (FreeMagmaWithLaws.isModel_decidableVars β Γ)
+
+/-- Same-variable-language form of `Completeness'_decidableVars`. -/
+theorem Completeness_decidableVars {α : Type} [DecidableEq α]
+    {Γ : Ctx α} {E : MagmaLaw α} (h : Γ ⊧ E) : Nonempty (Γ ⊢ E) :=
+  match Completeness'_decidableVars h with
+  | .intro d => .intro (derive_of_derive' d)
+
+/-- The project-standard `Nat`-variable specialization. -/
+theorem CompletenessNat_noGlobalChoice {Γ : Ctx Nat} {E : MagmaLaw Nat}
+    (h : Γ ⊧ E) : Nonempty (Γ ⊢' E) :=
+  Completeness'_decidableVars h
