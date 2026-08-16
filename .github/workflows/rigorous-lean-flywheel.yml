@@ -29,28 +29,35 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O19-O20 dependency cone
+      - name: Build O19-O21 dependency cone
         run: |
           lake build equational_theories.SupportExtensionNecessity
           lake build equational_theories.SupportQuotientLiftNormalForm
+          lake build equational_theories.SupportFiniteChoiceBoundary
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
           import equational_theories.SupportExtensionNecessity
           import equational_theories.SupportQuotientLiftNormalForm
+          import equational_theories.SupportFiniteChoiceBoundary
           #print axioms supportSubstitutionExtension_of_supportRetract
           #print axioms supportRetract_of_supportSubstitutionExtension
           #print axioms supportRetract_iff_allSupportSubstitutionExtensions
           #print axioms supportQuotientLift_iff_supportIndexedSection
           #print axioms totalSubst_of_supportSection
+          #print axioms supportIndexedSection_of_supportFamilyChoice
+          #print axioms supportQuotientLift_of_supportFamilyChoice
+          #print axioms twoLeafMemPositionData_of_supportFamilyChoice
+          #print axioms eqOrNe_of_twoLeafSupportFamilyChoice
+          #print axioms supportFamilyChoice_of_decidableEq
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O19-O20 axiom audit or sorry dependency.'
+            echo 'Invalid O19-O21 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(supportSubstitutionExtension_of_supportRetract|supportRetract_of_supportSubstitutionExtension|supportRetract_iff_allSupportSubstitutionExtensions|supportQuotientLift_iff_supportIndexedSection|totalSubst_of_supportSection).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O19-O20 targets.'
+          if grep -E "(supportSubstitutionExtension_of_supportRetract|supportRetract_of_supportSubstitutionExtension|supportRetract_iff_allSupportSubstitutionExtensions|supportQuotientLift_iff_supportIndexedSection|totalSubst_of_supportSection|supportIndexedSection_of_supportFamilyChoice|supportQuotientLift_of_supportFamilyChoice|twoLeafMemPositionData_of_supportFamilyChoice|eqOrNe_of_twoLeafSupportFamilyChoice|supportFamilyChoice_of_decidableEq).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O19-O21 targets.'
             exit 1
           fi
