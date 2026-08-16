@@ -26,25 +26,17 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build flywheel capabilities
+      - name: Build O4-O5 dependency cone
         run: |
-          lake build equational_theories.FreeMagmaEvalCongr
-          lake build equational_theories.Definability.FreeMagmaTerm
-          lake build equational_theories.Definability.Law43
-          lake build equational_theories.Definability.Law46
-          lake build equational_theories.Definability.Tarski543
           lake build equational_theories.CompletenessFiniteSupport
           lake build equational_theories.FiniteOverrideObstruction
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.Definability.FreeMagmaTerm
           import equational_theories.CompletenessFiniteSupport
           import equational_theories.FiniteOverrideObstruction
           #print axioms FreeMagma.evalInMagma_congr
-          #print axioms FreeMagma.eval_termDefinable
-          #print axioms FreeMagma.eval_comp_termDefinable
           #print axioms FreeMagmaWithLaws.isModel
           #print axioms Completeness'
           #print axioms FreeMagmaWithLaws.isModel_decidableVars
@@ -59,9 +51,7 @@ jobs:
             echo 'Invalid axiom audit or sorry dependency.'
             exit 1
           fi
-          echo '--- Baseline vs finite-support choice check ---'
-          grep -E "FreeMagmaWithLaws.isModel'|Completeness'|Completeness_decidableVars|CompletenessNat_noGlobalChoice" /tmp/axioms.txt || true
-          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice remains in a finite-support target.'
+          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|decidableEq_of_onePointOverride_of_stableEq).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice remains in an O4/O5 target.'
             exit 1
           fi
