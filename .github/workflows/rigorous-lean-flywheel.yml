@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel-o30
+      - agent/rigorous-lean-capital-flywheel-o31
   workflow_dispatch:
 
 concurrency:
@@ -29,28 +29,30 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O30 dependency cone
+      - name: Build O31 dependency cone
         run: |
-          lake build equational_theories.QuotientNormalizerSection
           lake build equational_theories.AssociativityQuotientNormalizer
+          lake build equational_theories.AmbientAssociativityCompleteness
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.AssociativityQuotientNormalizer
-          #print axioms derive'_associativity_step
-          #print axioms derive'_assoc_canon_append
-          #print axioms derive'_associativity_reduce
-          #print axioms derive'_associativity_toList_eq
-          #print axioms quotientNormalizerData_associativity
-          #print axioms contextQuotientSections_associativity
+          import equational_theories.AmbientAssociativityCompleteness
+          #print axioms derive'_ambientAssociativity_step
+          #print axioms derive'_ambientAssoc_canon_append
+          #print axioms derive'_ambientAssociativity_reduce
+          #print axioms derive'_ambientAssociativity_toList_eq
+          #print axioms quotientNormalizerData_ambientAssociativity
+          #print axioms supportRetractionData_ambientAssociativity
+          #print axioms contextSupportRetract_ambientAssociativity
+          #print axioms Completeness'_ambientAssociativity
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O30 axiom audit or sorry dependency.'
+            echo 'Invalid O31 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(derive'_associativity_step|derive'_assoc_canon_append|derive'_associativity_reduce|derive'_associativity_toList_eq|quotientNormalizerData_associativity|contextQuotientSections_associativity).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O30 targets.'
+          if grep -E "(derive'_ambientAssociativity_step|derive'_ambientAssoc_canon_append|derive'_ambientAssociativity_reduce|derive'_ambientAssociativity_toList_eq|quotientNormalizerData_ambientAssociativity|supportRetractionData_ambientAssociativity|contextSupportRetract_ambientAssociativity|Completeness'_ambientAssociativity).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O31 targets.'
             exit 1
           fi
