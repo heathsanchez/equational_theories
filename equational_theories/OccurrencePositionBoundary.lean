@@ -42,7 +42,10 @@ theorem mem_has_occurrence_position {α : Type} (a : α) :
 avoids `elems`, deduplication, and `finEquiv`. -/
 def memDecidable {α : Type} [DecidableEq α] (a : α) :
     (t : FreeMagma α) → Decidable (Mem a t)
-  | Lf b => inferInstance
+  | Lf b =>
+      match (inferInstance : Decidable (a = b)) with
+      | isTrue h => isTrue h
+      | isFalse h => isFalse h
   | l ⋆ r =>
       match memDecidable a l with
       | isTrue hl => isTrue (.inl hl)
