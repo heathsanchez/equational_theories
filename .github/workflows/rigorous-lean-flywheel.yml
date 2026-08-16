@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel-o15
+      - agent/rigorous-lean-capital-flywheel-o16
   workflow_dispatch:
 
 concurrency:
@@ -29,25 +29,28 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O15 dependency cone
+      - name: Build O16 dependency cone
         run: |
-          lake build equational_theories.OccurrencePositionBoundary
+          lake build equational_theories.CompletenessOccurrenceMaterialization
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.OccurrencePositionBoundary
-          #print axioms FreeMagma.occurrenceLabel_mem
-          #print axioms FreeMagma.mem_has_occurrence_position
-          #print axioms FreeMagma.memPositionData_of_decidableEq
-          #print axioms FreeMagma.mem_of_occurrence_position
+          import equational_theories.CompletenessOccurrenceMaterialization
+          #print axioms chooseOccurrenceFamily
+          #print axioms lawMem_iff_occurrenceTreeMem
+          #print axioms supportQuotientLift_of_positionData
+          #print axioms computableLawSupport_resources
+          #print axioms FreeMagmaWithLaws.isModel_occurrenceMaterialized
+          #print axioms Completeness'_occurrenceMaterialized
+          #print axioms computableLawSupport_of_decidableEq
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O15 axiom audit or sorry dependency.'
+            echo 'Invalid O16 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(occurrenceLabel_mem|mem_has_occurrence_position|memPositionData_of_decidableEq|mem_of_occurrence_position).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O15 targets.'
+          if grep -E "(chooseOccurrenceFamily|lawMem_iff_occurrenceTreeMem|supportQuotientLift_of_positionData|computableLawSupport_resources|isModel_occurrenceMaterialized|Completeness'_occurrenceMaterialized|computableLawSupport_of_decidableEq).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O16 targets.'
             exit 1
           fi
