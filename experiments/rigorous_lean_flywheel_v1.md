@@ -127,7 +127,50 @@ Verdict: `VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`.
 
 This is a real source-distinct capability transfer: O1 changed the representation of a live metatheorem residual and yielded a kernel-valid theorem family with a strictly smaller axiom dependency set.
 
-It does not yet close issue #499 in full generality. The current theorem assumes decidable equality on the context variable type and Type-0 completeness. The remaining question is whether that assumption is merely an adapter limitation or reflects a genuine constructive obstruction to producing a total substitution for arbitrary variable types.
+It does not yet close issue #499 in full generality. The current theorem assumes decidable equality on the context variable type and Type-0 completeness.
+
+## O5 residual — what exactly does finite override require?
+
+After O4, the next question was whether `[DecidableEq α]` was accidental implementation scaffolding.
+
+Repository inspection isolated two distinct uses:
+
+1. `FreeMagma.elems` itself requires `[DecidableEq α]` to deduplicate the finite variable support.
+2. More importantly, `derive'.SubstAx` requires a *total* substitution `α → FreeMagma β`. O4 therefore takes finitely many chosen support representatives and extends them to a total function by repeated point overrides.
+
+A first attempted obstruction theorem claimed that a uniform one-point override primitive already implies `DecidableEq`. Under Rigorous review this was rejected as too strong constructively: the attempted proof used contradiction to turn `¬¬(a=b)` into `a=b`, silently adding classical stability.
+
+Corrected candidate file:
+
+`equational_theories/FiniteOverrideObstruction.lean`.
+
+Corrected statements:
+
+- `weakEqDecision_of_onePointOverride`: a one-point Boolean override with exact at-key behavior and preserved off-key default yields, for each `a b`, either `a ≠ b` or `¬¬(a = b)`.
+- `decidableEq_of_onePointOverride_of_stableEq`: if equality is additionally stable (`¬¬(a=b) → a=b`), the same override primitive yields full `DecidableEq`.
+
+This correction matters: O5 is not evidence that arbitrary equality is constructively decidable. It identifies the exact logical gap the total-override adapter exposes.
+
+Current O5 verdict: `PENDING_KERNEL_AND_AXIOM_AUDIT`.
+
+## Architectural residual exposed by O5
+
+The strongest remaining obstruction is no longer evaluation. It is the derivation representation:
+
+`derive'.SubstAx` asks for a total substitution on the original variable type even though the axiom term can only observe its support.
+
+This suggests a possible next representation change:
+
+`TOTAL_SUBSTITUTION` → `SUPPORT_LOCAL_SUBSTITUTION`.
+
+A support-local constructor would take assignments only for variables carrying a proof that they occur in the current law. Such a representation can state consistency through the subtype itself and does not need to enumerate all variables or assign off-support values.
+
+However, this must not be confused with solving issue #499. A new support-local calculus would need two separate proofs:
+
+1. semantic soundness / completeness for the new calculus;
+2. a conservativity or translation theorem back to the existing `derive'` calculus.
+
+The second translation is exactly where total-function extension may reintroduce the equality/selection obstruction. Therefore a support-local calculus is currently a representation experiment, not yet a replacement proof of the existing completeness theorem.
 
 ## Verification history
 
@@ -145,7 +188,9 @@ Run 3 first attempt: infrastructure-only SSL reset during `lake update`.
 
 Run 3 rerun: PASS. All targets built and the hardened baseline-vs-intervention axiom audit passed.
 
-This sequence is itself classified correctly as residual → intervention → verifier rather than hiding failed runs.
+O5 branch adds a retrying dependency restore because repeated CI runs exposed network resets as an infrastructure residual.
+
+This sequence is classified as residual → intervention → verifier; failed infrastructure or rejected constructive claims are retained rather than hidden.
 
 ## Current evidence levels
 
@@ -161,15 +206,20 @@ This sequence is itself classified correctly as residual → intervention → ve
 
 `VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`
 
+`PENDING_O5_WEAK_EQUALITY_OVERRIDE_OBSTRUCTION`
+
 Still NOT established:
 
 - matched-budget natural developmental dependence;
 - frontier expansion caused by prior capability state;
 - open-ended compounding;
-- full choice-free completeness for arbitrary variable types.
+- full choice-free completeness for arbitrary variable types;
+- impossibility of a different constructive proof of generic completeness.
 
 ## Next separators
 
-1. Determine whether the `DecidableEq` assumption can be removed without reintroducing `Classical.choice`, or isolate a formal obstruction showing why a total substitution requires an equality/selection principle.
-2. Freeze a new natural theorem residual before solution inspection and compare cold / O1 / O1+O2 / O1+O2+O3 / accumulated-state arms under matched proof-search budget.
-3. Treat O4 as installed capital only within its verified scope; do not generalize the result beyond decidable variable languages.
+1. Kernel-build and axiom-audit the corrected O5 weak equality obstruction.
+2. If O5 passes, treat the current total-override route as logically characterized, not globally impossible.
+3. Prototype a support-local substitution calculus and test semantic soundness separately from conservativity back to `derive'`.
+4. Freeze a new natural theorem residual before solution inspection and compare cold / O1 / O1+O2 / O1+O2+O3 / accumulated-state arms under matched proof-search budget.
+5. Treat O4 as installed capital only within its verified scope; do not generalize the result beyond decidable variable languages.
