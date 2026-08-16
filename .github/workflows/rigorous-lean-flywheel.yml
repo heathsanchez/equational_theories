@@ -42,13 +42,14 @@ jobs:
           #print axioms occurrenceLift_exists
           #print axioms occurrenceLift_eval_eq_embed
           #print axioms eval_has_occurrence_rep
+          #print axioms occurrence_representatives_derivably_equal
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid O6 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(occurrenceLift_exists|occurrenceLift_eval_eq_embed|eval_has_occurrence_rep).*Classical.choice" /tmp/axioms.txt; then
+          if grep -E "(occurrenceLift_exists|occurrenceLift_eval_eq_embed|eval_has_occurrence_rep|occurrence_representatives_derivably_equal).*Classical.choice" /tmp/axioms.txt; then
             echo 'Classical.choice remains in O6.'
             exit 1
           fi
