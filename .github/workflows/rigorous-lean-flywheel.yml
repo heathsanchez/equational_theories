@@ -6,6 +6,10 @@ on:
       - agent/rigorous-lean-capital-flywheel
   workflow_dispatch:
 
+concurrency:
+  group: rigorous-lean-flywheel-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -19,7 +23,12 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Restore Lake packages
-        run: lake update
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
       - name: Build flywheel capabilities
         run: |
           lake build equational_theories.FreeMagmaEvalCongr
@@ -28,12 +37,14 @@ jobs:
           lake build equational_theories.Definability.Law46
           lake build equational_theories.Definability.Tarski543
           lake build equational_theories.CompletenessFiniteSupport
+          lake build equational_theories.FiniteOverrideObstruction
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
           import equational_theories.Definability.FreeMagmaTerm
           import equational_theories.CompletenessFiniteSupport
+          import equational_theories.FiniteOverrideObstruction
           #print axioms FreeMagma.evalInMagma_congr
           #print axioms FreeMagma.eval_termDefinable
           #print axioms FreeMagma.eval_comp_termDefinable
@@ -43,15 +54,15 @@ jobs:
           #print axioms Completeness'_decidableVars
           #print axioms Completeness_decidableVars
           #print axioms CompletenessNat_noGlobalChoice
+          #print axioms weakEqDecision_of_onePointOverride
+          #print axioms eqOrNe_of_onePointOverride_of_stableEq
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid axiom audit or sorry dependency.'
             exit 1
           fi
-          echo '--- Baseline vs finite-support choice check ---'
-          grep -E "FreeMagmaWithLaws.isModel'|Completeness'|Completeness_decidableVars|CompletenessNat_noGlobalChoice" /tmp/axioms.txt || true
-          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice remains in a finite-support target.'
+          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice remains in an O4/O5 target.'
             exit 1
           fi
