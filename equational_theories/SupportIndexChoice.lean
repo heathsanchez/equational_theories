@@ -1,4 +1,4 @@
-import equational_theories.MagmaLaw
+import equational_theories.FunctionSpaceLiftObstruction
 
 open FreeMagma
 open Law
@@ -80,3 +80,20 @@ theorem lawSupport_surjectiveFamilyLiftAt {α : Type} [DecidableEq α] (E : Magm
     ∀ {A B : Type} (q : A → B), Function.Surjective q →
       FamilyLiftAt {a // E.Mem a} q :=
   surjective_familyLiftAt_of_indexedChoice _ (lawSupport_indexedChoice E)
+
+/-- Specializing the preceding theorem to the quotient embedding used in completeness gives a
+choice-free family lift on exactly the variables visible to one law. -/
+theorem quotientEmbed_lifts_onLawSupport {δ α β : Type} [DecidableEq α]
+    (Γ : Ctx δ) (E : MagmaLaw α) :
+    FamilyLiftAt {a // E.Mem a}
+      (embed Γ : FreeMagma β → FreeMagmaWithLaws β Γ) :=
+  lawSupport_surjectiveFamilyLiftAt E _ (embed_surjective Γ)
+
+/-- Therefore a quotient-valued valuation admits a representative assignment indexed only by the
+support proofs of one law. No off-support default or total substitution is constructed here. -/
+theorem supportRepresentativeAssignment_decidable {δ α β : Type} [DecidableEq α]
+    (Γ : Ctx δ) (E : MagmaLaw α) (φ : α → FreeMagmaWithLaws β Γ) :
+    ∃ σ : (a : α) → E.Mem a → FreeMagma β,
+      ∀ a h, φ a = embed Γ (σ a h) := by
+  obtain ⟨g, hg⟩ := quotientEmbed_lifts_onLawSupport Γ E (fun s => φ s.1)
+  exact ⟨fun a h => g ⟨a, h⟩, fun a h => hg ⟨a, h⟩⟩
