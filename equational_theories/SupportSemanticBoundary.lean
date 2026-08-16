@@ -20,7 +20,7 @@ theorem supportValuationExtension_of_retract {α : Type} (E : MagmaLaw α)
   obtain ⟨r, hr⟩ := hret
   refine ⟨fun a => ψ (r a), ?_⟩
   intro s
-  rw [hr s]
+  exact congrArg ψ (hr s)
 
 /-- Conversely, if support valuations extend into every codomain, instantiate the codomain with
 the support subtype itself and extend the identity valuation to obtain a retraction. -/
@@ -61,7 +61,7 @@ theorem satisfies_attach_iff_of_retract {α G : Type} [Magma G] {E : MagmaLaw α
     (hret : SupportRetract E) : G ⊧ E.attach ↔ G ⊧ E := by
   refine ⟨satisfies_of_attach_noDecide, ?_⟩
   exact satisfies_attach_of_supportExtension
-    (supportValuationExtension_of_retract E G hret)
+    (supportValuationExtension_of_retract E hret G)
 
 /-- Decidable equality is one sufficient mechanism for constructing a support retraction: preserve
 support variables exactly and send all off-support variables to one visible support variable. -/
