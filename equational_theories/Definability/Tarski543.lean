@@ -1,4 +1,5 @@
 import equational_theories.Definability.Basic
+import equational_theories.Definability.FreeMagmaTerm
 import equational_theories.Equations.All
 import equational_theories.Generated.MagmaEgg.small
 import Mathlib.Algebra.Group.MinimalAxioms
@@ -121,15 +122,9 @@ open FirstOrder.Language
 private lemma termDef {M : Type*} [op : Magma M] (h : Equation543 M) :
     let := op.FOStructure; (∅:Set M).TermDefinable MagmaLanguage
     (⟨(CommSemigroupOf543 h).mul⟩ : Magma M).FinArityOp := by
-  use (
-    let f := Functions.apply₂ (L := (MagmaLanguage.withConstants (∅:Set M))) (α := Fin 2) (Sum.inl ());
-    f (Term.var 0) (f (f (Term.var 0) (Term.var 0)) (Term.var 1))
-  )
-  funext v
-  simp only [Magma.FinArityOp, Fin.isValue, constantsOn_Functions, constantsOnFunc,
-    Term.realize_functions_apply₂, Term.realize_var, Magma.FOStructure_funMap',
-    Matrix.cons_val_zero, Matrix.cons_val_one]
-  rfl
+  let t : FreeMagma (Fin 2) := Lf 0 ⋆ ((Lf 0 ⋆ Lf 0) ⋆ Lf 1)
+  simpa [Magma.FinArityOp, commGroupOf543_mul_def, t, FreeMagma.evalInMagma] using
+    (FreeMagma.eval_termDefinable (G := M) t)
 
 set_option backward.isDefEq.respectTransparency false in
 --A formula defining subtraction from the group operation.
