@@ -1,5 +1,8 @@
 import Batteries.Data.List.Basic
 import equational_theories.Definability.Basic
+import equational_theories.Definability.FreeMagmaTerm
+import equational_theories.FreeMagmaEvalCongr
+import equational_theories.Definability.Simple
 import equational_theories.Equations.All
 
 open FirstOrder.Language
@@ -9,10 +12,32 @@ open Law.MagmaLaw
 --TODO: the commutative law is definable from anything of the form f(x,y) ≃ f(y,x).
 theorem Equation43_termDefinableFrom_swapped_args {L : NatMagmaLaw}
     (hL2args : ∀ e ∈ L.lhs.elems.1, e ∈ [0,1] := by decide +kernel)
-    (hR2args : ∀ e ∈ L.rhs.elems.1, e ∈ [0,1] := by decide +kernel)
+    (_hR2args : ∀ e ∈ L.rhs.elems.1, e ∈ [0,1] := by decide +kernel)
     (hSymm : L.lhs ⬝ (fun x ↦ Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)
     : Law43.TermDefinableFrom L := by
-  sorry
+  intro G M hSat
+  letI := M
+  refine ⟨⟨fun x y ↦ L.lhs ⬝ fun n ↦ if n = 0 then x else y⟩, ?sat, ?defn⟩
+  · intro φ
+    dsimp [satisfiesPhi, Law43]
+    have h := hSat (fun n ↦ if n = 0 then φ 0 else φ 1)
+    dsimp [satisfiesPhi] at h
+    calc
+      L.lhs ⬝ (fun n ↦ if n = 0 then φ 0 else φ 1)
+          = L.rhs ⬝ (fun n ↦ if n = 0 then φ 0 else φ 1) := h
+      _ = (L.lhs ⬝ (fun x ↦ Lf ((Equiv.swap 0 1) x))) ⬝
+            (fun n ↦ if n = 0 then φ 0 else φ 1) := by rw [hSymm]
+      _ = L.lhs ⬝ (fun n ↦ if n = 0 then φ 1 else φ 0) := by
+        rw [FreeMagma.SubstEval]
+        apply FreeMagma.evalInMagma_congr
+        intro a ha
+        have haList : a ∈ L.lhs.elems.1 := (L.lhs.elems.2.2 a).2 ha
+        have ha01 := hL2args a haList
+        simp at ha01
+        rcases ha01 with rfl | rfl <;> simp [FreeMagma.evalInMagma]
+  · let σ : ℕ → Fin 2 := fun n ↦ if n = 0 then 0 else 1
+    simpa [Magma.FinArityOp, σ, Function.comp_def, apply_ite] using
+      (FreeMagma.eval_comp_termDefinable (G := G) L.lhs σ)
 
 /-- The commutative law 43 `x ◇ y = y ◇ x` is TermDefinable from 40 `x ◇ x = y ◇ y`. -/
 theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=
