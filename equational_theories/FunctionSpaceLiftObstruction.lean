@@ -57,7 +57,7 @@ theorem embed_surjective {α β : Type} (Γ : Ctx α) :
     Function.Surjective (embed Γ : FreeMagma β → FreeMagmaWithLaws β Γ) := by
   intro x
   obtain ⟨r, hr⟩ := Quotient.exists_rep x
-  exact ⟨r, hr.symm⟩
+  exact ⟨r, hr⟩
 
 /-- `PhiAsSubst_aux` is exactly the one-index-type function-space lifting instance needed for the
 quotient embedding. The baseline implementation obtains it using `Classical.axiomOfChoice`. -/
