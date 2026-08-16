@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel
+      - agent/rigorous-lean-capital-flywheel-o10
   workflow_dispatch:
 
 concurrency:
@@ -29,46 +29,26 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build flywheel capabilities
+      - name: Build O10 dependency cone
         run: |
-          lake build equational_theories.FreeMagmaEvalCongr
-          lake build equational_theories.Definability.FreeMagmaTerm
-          lake build equational_theories.Definability.Law43
-          lake build equational_theories.Definability.Law46
-          lake build equational_theories.Definability.Tarski543
-          lake build equational_theories.CompletenessFiniteSupport
-          lake build equational_theories.FiniteOverrideObstruction
-          lake build equational_theories.OccurrenceLift
+          lake build equational_theories.CompletenessSupportResources
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.Definability.FreeMagmaTerm
-          import equational_theories.CompletenessFiniteSupport
-          import equational_theories.FiniteOverrideObstruction
-          import equational_theories.OccurrenceLift
-          #print axioms FreeMagma.evalInMagma_congr
-          #print axioms FreeMagma.eval_termDefinable
-          #print axioms FreeMagma.eval_comp_termDefinable
-          #print axioms FreeMagmaWithLaws.isModel
-          #print axioms Completeness'
-          #print axioms FreeMagmaWithLaws.isModel_decidableVars
-          #print axioms Completeness'_decidableVars
-          #print axioms Completeness_decidableVars
-          #print axioms CompletenessNat_noGlobalChoice
-          #print axioms weakEqDecision_of_onePointOverride
-          #print axioms eqOrNe_of_onePointOverride_of_stableEq
-          #print axioms occurrenceLift_exists
-          #print axioms occurrenceLift_eval_eq_embed
-          #print axioms eval_has_occurrence_rep
-          #print axioms occurrence_representatives_derivably_equal
+          import equational_theories.CompletenessSupportResources
+          #print axioms totalSubst_of_supportResources
+          #print axioms FreeMagmaWithLaws.isModel_supportResources
+          #print axioms Completeness'_supportResources
+          #print axioms supportQuotientLift_of_decidableEq
+          #print axioms FreeMagmaWithLaws.isModel_decidableVars_via_resources
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid axiom audit or sorry dependency.'
+            echo 'Invalid O10 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq|occurrenceLift_exists|occurrenceLift_eval_eq_embed|eval_has_occurrence_rep|occurrence_representatives_derivably_equal).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice remains in an O4/O5/O6 target.'
+          if grep -E "(totalSubst_of_supportResources|isModel_supportResources|Completeness'_supportResources|supportQuotientLift_of_decidableEq|isModel_decidableVars_via_resources).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O10 targets.'
             exit 1
           fi
