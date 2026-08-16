@@ -34,21 +34,31 @@ jobs:
         run: |
           lake build equational_theories.MagmaLaw
           lake build equational_theories.SupportLocalDerivation
+          lake build equational_theories.SupportIndexChoice
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
           import equational_theories.SupportLocalDerivation
+          import equational_theories.SupportIndexChoice
           #print axioms FreeMagma.supportSubst_of_total
+          #print axioms Law.MagmaLaw.supportAssignment_proof_irrel
           #print axioms Law.MagmaLaw.supportSubst_of_total
           #print axioms deriveSupport'_of_derive'
+          #print axioms indexedChoice_of_surjective_familyLiftAt
+          #print axioms surjective_familyLiftAt_of_indexedChoice
+          #print axioms surjectiveFamilyLiftAt_iff_indexedChoice
+          #print axioms fin_indexedChoice
+          #print axioms indexedChoice_equiv
+          #print axioms lawSupport_indexedChoice
+          #print axioms lawSupport_surjectiveFamilyLiftAt
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid O8 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(supportSubst_of_total|deriveSupport'_of_derive').*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O8 representation targets.'
+          if grep -E "(supportSubst_of_total|supportAssignment_proof_irrel|deriveSupport'_of_derive'|indexedChoice_of_surjective_familyLiftAt|surjective_familyLiftAt_of_indexedChoice|surjectiveFamilyLiftAt_iff_indexedChoice|fin_indexedChoice|indexedChoice_equiv|lawSupport_indexedChoice|lawSupport_surjectiveFamilyLiftAt).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O8 targets.'
             exit 1
           fi
