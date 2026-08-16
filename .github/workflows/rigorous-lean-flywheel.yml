@@ -41,10 +41,12 @@ jobs:
           cat > /tmp/AxiomAudit.lean <<'EOF'
           import equational_theories.SupportLocalDerivation
           import equational_theories.SupportIndexChoice
+          #print axioms FreeMagma.supportSubst_eq_eval_of_agree
           #print axioms FreeMagma.supportSubst_of_total
           #print axioms Law.MagmaLaw.supportAssignment_proof_irrel
           #print axioms Law.MagmaLaw.supportSubst_of_total
           #print axioms deriveSupport'_of_derive'
+          #print axioms derive'_of_deriveSupport'_decidable
           #print axioms indexedChoice_of_surjective_familyLiftAt
           #print axioms surjective_familyLiftAt_of_indexedChoice
           #print axioms surjectiveFamilyLiftAt_iff_indexedChoice
@@ -60,7 +62,7 @@ jobs:
             echo 'Invalid O8 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(supportSubst_of_total|supportAssignment_proof_irrel|deriveSupport'_of_derive'|indexedChoice_of_surjective_familyLiftAt|surjective_familyLiftAt_of_indexedChoice|surjectiveFamilyLiftAt_iff_indexedChoice|fin_indexedChoice|indexedChoice_equiv|lawSupport_indexedChoice|lawSupport_surjectiveFamilyLiftAt|quotientEmbed_lifts_onLawSupport|supportRepresentativeAssignment_decidable).*Classical.choice" /tmp/axioms.txt; then
+          if grep -E "(supportSubst_eq_eval_of_agree|supportSubst_of_total|supportAssignment_proof_irrel|deriveSupport'_of_derive'|derive'_of_deriveSupport'_decidable|indexedChoice_of_surjective_familyLiftAt|surjective_familyLiftAt_of_indexedChoice|surjectiveFamilyLiftAt_iff_indexedChoice|fin_indexedChoice|indexedChoice_equiv|lawSupport_indexedChoice|lawSupport_surjectiveFamilyLiftAt|quotientEmbed_lifts_onLawSupport|supportRepresentativeAssignment_decidable).*Classical.choice" /tmp/axioms.txt; then
             echo 'Classical.choice unexpectedly appears in O8 targets.'
             exit 1
           fi
