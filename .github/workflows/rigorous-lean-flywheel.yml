@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel-o10
+      - agent/rigorous-lean-capital-flywheel-o11
   workflow_dispatch:
 
 concurrency:
@@ -29,26 +29,26 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O10 dependency cone
+      - name: Build O11 dependency cone
         run: |
-          lake build equational_theories.CompletenessSupportResources
+          lake build equational_theories.CompletenessSingletonSupport
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.CompletenessSupportResources
-          #print axioms totalSubst_of_supportResources
-          #print axioms FreeMagmaWithLaws.isModel_supportResources
-          #print axioms Completeness'_supportResources
-          #print axioms supportQuotientLift_of_decidableEq
-          #print axioms FreeMagmaWithLaws.isModel_decidableVars_via_resources
+          import equational_theories.CompletenessSingletonSupport
+          #print axioms supportRetract_of_singletonSupport
+          #print axioms supportQuotientLift_of_singletonSupport
+          #print axioms singletonContext_supportResources
+          #print axioms FreeMagmaWithLaws.isModel_singletonSupport
+          #print axioms Completeness'_singletonSupport
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O10 axiom audit or sorry dependency.'
+            echo 'Invalid O11 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(totalSubst_of_supportResources|isModel_supportResources|Completeness'_supportResources|supportQuotientLift_of_decidableEq|isModel_decidableVars_via_resources).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O10 targets.'
+          if grep -E "(supportRetract_of_singletonSupport|supportQuotientLift_of_singletonSupport|singletonContext_supportResources|isModel_singletonSupport|Completeness'_singletonSupport).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O11 targets.'
             exit 1
           fi
