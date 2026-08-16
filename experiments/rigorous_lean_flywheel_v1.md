@@ -3,7 +3,7 @@
 ## Question
 Can natural Lean repairs be converted into reusable capability capital so that later proof acquisition pays less repeated search cost and exposes the next abstraction automatically?
 
-## Frozen historical sequence
+## Frozen historical seed
 
 - Base fork commit: `b1cc1756202d7f44e07bd4069b5df16901a36938`.
 - Natural episode E1: upstream PR #1467, Law46, merged 2026-08-13.
@@ -13,126 +13,163 @@ The ordering is historical. E2 is not treated as caused by E1.
 
 ## O1 — evaluation on support
 
-Both accepted repairs require the same structural fact:
+Both accepted repairs required the same structural fact:
 
 > Evaluation of a `FreeMagma` depends only on values assigned to variables that occur in the term.
 
-E1 introduced this as `FreeMagma.evalInMagma_congr` inside `Definability/Law46.lean`.
-E2 independently rebuilt the same recursive induction locally as `eval_eq_on_mem`.
+E1 introduced this locally as `FreeMagma.evalInMagma_congr` inside Law46. E2 independently rebuilt essentially the same recursive induction as `eval_eq_on_mem`.
 
-Intervention: `equational_theories/FreeMagmaEvalCongr.lean`.
+Compiled intervention: `equational_theories/FreeMagmaEvalCongr.lean`.
 
-Evidence:
-- repeated mechanism: OBSERVED;
-- source-level later-search compression on Law43: CANDIDATE;
-- kernel/build verdict: PENDING;
-- compounding: NOT CLAIMED.
+### Verification
+
+GitHub Actions targeted build: PASS.
+
+Axiom audit:
+
+`FreeMagma.evalInMagma_congr` — no axioms.
+
+Verdict: `ADMITTED_O1_SUPPORT_CONGRUENCE` for the theorem/capability itself.
+
+The historical counterfactual claim remains narrower: O1 would remove a repeated induction from the later Law43 proof, but this alone is not a natural compounding result.
 
 ## O2 — FreeMagma evaluator to term-definability
 
-Residual exposed after O1: Law43 and Law46 still hand-built the bridge from a `FreeMagma` expression to a first-order `Set.TermDefinable` witness. Tarski543 contained a third independent instance.
+Residual exposed after O1: Law43 and Law46 still hand-built the bridge from a `FreeMagma` binary expression to a first-order `Set.TermDefinable` witness. Tarski543 contained a third independent instance.
 
-Intervention: `equational_theories/Definability/FreeMagmaTerm.lean`.
+Compiled intervention: `equational_theories/Definability/FreeMagmaTerm.lean`.
 
 Capability:
 
 > Any `FreeMagma (Fin 2)` evaluator is automatically term-definable in the underlying magma language.
 
-Candidate consumers: Law43, Law46, Tarski543.
+Consumers on the experiment branch: Law43, Law46, Tarski543.
 
-Evidence:
-- repeated semantic mechanism across three sites: OBSERVED;
-- cross-site source-level reuse: CANDIDATE PASS;
-- first-order witness boilerplate compression: PASS at source level;
-- kernel/build verdict: PENDING;
-- natural developmental dependence: NOT TESTED.
+### Verification
+
+Target module and all three consumer modules kernel-build: PASS.
+
+Axiom audit:
+
+`FreeMagma.eval_termDefinable` — `[propext, Quot.sound]`.
+
+Verdict: `ADMITTED_O2_FREEMAGMA_TERM_BRIDGE` as a verified reusable theorem.
 
 ## O3 — mapped-variable term-definability
 
 Residual exposed after O2: Law43 and Law46 still separately mapped source variables into binary arguments before invoking O2.
 
-Derived capability: `FreeMagma.eval_comp_termDefinable`.
+Derived capability:
+
+`FreeMagma.eval_comp_termDefinable`.
 
 > For any `t : FreeMagma α` and `σ : α → Fin 2`, the evaluator `v ↦ t ⬝ (v ∘ σ)` is term-definable.
 
-O3 is obtained by composing `fmapHom`, O2, and `evalInMagma_fmapHom`; Law43 and Law46 now invoke O3 directly.
+O3 is obtained by composing `fmapHom`, O2, and `evalInMagma_fmapHom`; Law43 and Law46 invoke O3 directly.
 
-Verdict: `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`.
+### Verification
 
-The reason is structural: before O2, O3 would require another first-order witness proof; after O2, it is a small composition of existing capital.
+Kernel build: PASS.
 
-## Live source-distinct target: open issue #499
+Axiom audit:
 
-The next target was deliberately moved outside the definability repair family: upstream open issue #499 asks whether the use of choice in the completeness proof can be removed.
+`FreeMagma.eval_comp_termDefinable` — `[propext, Quot.sound]`.
 
-The existing proof uses `PhiAsSubst_aux` to lift an entire arbitrary quotient-valued valuation `φ : β → FreeMagmaWithLaws γ Γ` to representatives `σ : β → FreeMagma γ` using `Classical.axiomOfChoice`.
+Verdict: `ADMITTED_O3_MAPPED_TERM_BRIDGE` as a theorem.
 
-Residual classification after inspection:
+Developmental interpretation remains `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`: once O2 existed, O3 became a small composition rather than another first-order witness proof. A matched cold/ablation acquisition experiment is still required before upgrading that causal claim.
 
-`REPRESENTATION / SCOPE FAILURE`, not search failure.
+## Live source-distinct target — upstream issue #499
 
-The law being checked only evaluates finitely many variables, but the proof asks for representatives of every variable in the valuation. This is a global-state lift for a finite-support observation.
+The experiment next moved outside the definability repair family. Upstream open issue #499 asks whether the use of choice in the completeness proof can be removed.
 
-That distinction is exactly what O1 records.
+Baseline implementation:
+
+`FreeMagmaWithLaws.isModel` / `Completeness'` use a global `PhiAsSubst_aux` that obtains representatives for an arbitrary quotient-valued valuation with `Classical.axiomOfChoice`.
+
+Residual classification after applying O1:
+
+`REPRESENTATION / SCOPE FAILURE`.
+
+A single law only observes finitely many variables, but the baseline proof lifts representatives for every variable in the valuation. O1 licenses forgetting everything outside the term support.
 
 ## O4 — finite-support quotient lifting
 
-New candidate file:
+File: `equational_theories/CompletenessFiniteSupport.lean`.
 
-`equational_theories/CompletenessFiniteSupport.lean`
+Components:
 
-Main ingredients:
+1. `PhiAsSubst_onLawSupport` lifts representatives only for variables occurring in `lhs` or `rhs`, using repeated `Quotient.exists_rep` on that finite list and one obtained representative as the off-support default.
+2. `FreeMagmaWithLaws.isModel_decidableVars` uses O1 to replace the original quotient valuation by the finite-support substitution only where each side can observe it.
+3. `Completeness'_decidableVars` gives Type-0 completeness for contexts whose variable language has `DecidableEq`.
+4. `Completeness_decidableVars` gives the same-variable-language form.
+5. `CompletenessNat_noGlobalChoice` gives the project-standard Nat specialization.
 
-1. `PhiAsSubst_onLawSupport`: for a single law with decidable variable equality, collect only the variables in `lhs.elems ∪ rhs.elems`, choose representatives for that finite list using repeated `Quotient.exists_rep`, and use one obtained representative as the default outside support.
-2. `FreeMagmaWithLaws.isModel_decidableVars`: use O1 (`evalInMagma_congr`) to replace the original quotient valuation by the finite-support substitution only where each side of the law can observe it.
-3. `Completeness'_decidableVars`: Type-0 completeness for contexts whose variable language has `DecidableEq`, without invoking the global `PhiAsSubst` step.
-4. `Completeness_decidableVars` and `CompletenessNat_noGlobalChoice`: same-language and project-standard Nat specializations.
+### Hard verification
 
-## Why O4 matters to the flywheel
+Targeted GitHub Actions build: PASS for `CompletenessFiniteSupport`.
 
-This is the first source-distinct transfer where accumulated capability materially changes problem formulation:
+Baseline axiom audit:
 
-`O1 support law` → notice global valuation lifting is unnecessary → replace infinite/global choice-shaped obligation with finite support lifting → candidate solution to a live open metatheorem problem under a scoped assumption.
+- `FreeMagmaWithLaws.isModel` — `[propext, Classical.choice, Quot.sound]`.
+- `Completeness'` — `[propext, Classical.choice, Quot.sound]`.
 
-Without O1, the obvious route is to keep trying to construct the global representative function. With O1 installed, values outside support are formally irrelevant and can be forgotten.
+Finite-support axiom audit:
 
-Candidate verdict:
+- `FreeMagmaWithLaws.isModel_decidableVars` — `[propext, Quot.sound]`.
+- `Completeness'_decidableVars` — `[propext, Quot.sound]`.
+- `Completeness_decidableVars` — `[propext, Quot.sound]`.
+- `CompletenessNat_noGlobalChoice` — `[propext, Quot.sound]`.
 
-`CANDIDATE_SOURCE_DISTINCT_TRANSFER_O1_TO_COMPLETENESS`
+No `Classical.choice`. No `sorryAx`.
 
-`CANDIDATE_O4_FINITE_SUPPORT_QUOTIENT_LIFT`
+Verdict: `VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`.
 
-This still does NOT close issue #499 in full generality: the new result assumes decidable equality on the context variable type and currently targets Type-0 completeness. The fully general quotient formulation may genuinely retain a choice-shaped obstruction; that has not been proved impossible.
+This is a real source-distinct capability transfer: O1 changed the representation of a live metatheorem residual and yielded a kernel-valid theorem family with a strictly smaller axiom dependency set.
 
-## Infrastructure residual
+It does not yet close issue #499 in full generality. The current theorem assumes decidable equality on the context variable type and Type-0 completeness. The remaining question is whether that assumption is merely an adapter limitation or reflects a genuine constructive obstruction to producing a total substitution for arbitrary variable types.
 
-GitHub reports zero Actions runs for the experiment branch. The available integration receives HTTP 403 when querying repository Actions permissions. Therefore the absence of CI is classified strictly as infrastructure/verification unavailable, not as semantic success or failure.
+## Verification history
 
-No O1/O2/O3/O4 theorem is ADMITTED until Lean kernel/build validation is obtained.
+A targeted workflow `.github/workflows/rigorous-lean-flywheel.yml` was added.
 
-## Required next separators
+Run 1: failed semantically at a Law43 extensional adapter mismatch; O1 and O2 had already built.
 
-1. Kernel/build the experiment branch, especially:
-   - `FreeMagmaEvalCongr.lean`;
-   - `Definability/FreeMagmaTerm.lean`;
-   - Law43 / Law46 / Tarski543 consumers;
-   - `CompletenessFiniteSupport.lean`.
-2. Run an axiom audit on `Completeness'_decidableVars` / `Completeness_decidableVars` to determine whether `Classical.choice` is absent from the transitive theorem dependencies.
-3. If O4 survives, compare cold versus O1-enabled acquisition on the frozen #499 target or a matched synthetic reconstruction where the solution text is hidden.
-4. Only after that test a new natural problem with O1–O4 installed.
+Intervention: add the missing `apply_ite` normalization.
 
-## Current verdicts
+Run 2: all target modules built; first axiom audit showed the O4 results lacked `Classical.choice`, but O2/O3 audit names were missing their import.
 
-`RETAIN_CANDIDATE_O1_SUPPORT_CONGRUENCE`
+Audit harness was hardened with the missing import, `pipefail`, baseline declarations, and failure checks.
 
-`RETAIN_CANDIDATE_O2_FREEMAGMA_TERM_BRIDGE`
+Run 3 first attempt: infrastructure-only SSL reset during `lake update`.
 
-`RETAIN_CANDIDATE_O3_MAPPED_TERM_BRIDGE`
+Run 3 rerun: PASS. All targets built and the hardened baseline-vs-intervention axiom audit passed.
+
+This sequence is itself classified correctly as residual → intervention → verifier rather than hiding failed runs.
+
+## Current evidence levels
+
+`ADMITTED_O1_SUPPORT_CONGRUENCE`
+
+`ADMITTED_O2_FREEMAGMA_TERM_BRIDGE`
+
+`ADMITTED_O3_MAPPED_TERM_BRIDGE`
 
 `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`
 
-`CANDIDATE_SOURCE_DISTINCT_TRANSFER_O1_TO_COMPLETENESS`
+`VERIFIED_SOURCE_DISTINCT_TRANSFER_O1_TO_COMPLETENESS`
 
-`RETAIN_CANDIDATE_O4_FINITE_SUPPORT_QUOTIENT_LIFT`
+`VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`
 
-No frontier-expansion or natural compounding claim is licensed yet.
+Still NOT established:
+
+- matched-budget natural developmental dependence;
+- frontier expansion caused by prior capability state;
+- open-ended compounding;
+- full choice-free completeness for arbitrary variable types.
+
+## Next separators
+
+1. Determine whether the `DecidableEq` assumption can be removed without reintroducing `Classical.choice`, or isolate a formal obstruction showing why a total substitution requires an equality/selection principle.
+2. Freeze a new natural theorem residual before solution inspection and compare cold / O1 / O1+O2 / O1+O2+O3 / accumulated-state arms under matched proof-search budget.
+3. Treat O4 as installed capital only within its verified scope; do not generalize the result beyond decidable variable languages.
