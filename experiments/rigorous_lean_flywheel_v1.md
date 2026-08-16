@@ -127,25 +127,117 @@ Verdict: `VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`.
 
 This is a real source-distinct capability transfer: O1 changed the representation of a live metatheorem residual and yielded a kernel-valid theorem family with a strictly smaller axiom dependency set.
 
-It does not yet close issue #499 in full generality. The current theorem assumes decidable equality on the context variable type and Type-0 completeness. The remaining question is whether that assumption is merely an adapter limitation or reflects a genuine constructive obstruction to producing a total substitution for arbitrary variable types.
+It does not yet close issue #499 in full generality. The current theorem assumes decidable equality on the context variable type and Type-0 completeness.
+
+## O5 — finite-override / equality boundary
+
+After O4, the next question was whether `[DecidableEq α]` was accidental implementation scaffolding.
+
+Repository inspection isolated two implementation uses:
+
+1. `FreeMagma.elems` requires `[DecidableEq α]` to deduplicate variable support. This part is avoidable in principle because `FreeMagma.toList` can enumerate occurrences with duplicates constructively.
+2. The deeper use is `derive'.SubstAx`, which requires a *total* substitution `α → FreeMagma β`. O4 therefore has to extend finitely many support representatives to a total function by repeated point overrides. The semantic side mirrors this: `satisfies` quantifies over total valuations `α → G`.
+
+This exposed three separate problems that should not be conflated:
+
+`SUPPORT EXTRACTION` → `SUPPORT COHERENCE` → `TOTAL-MAP EXTRACTION`.
+
+O1 solves the semantic support problem. O4 solves support coherence and total-map construction when equality is decidable. O5 characterizes what remains when equality is not assumed decidable.
+
+### Rejected O5 claim 1
+
+The first candidate theorem claimed that a uniform one-point override primitive already implies `DecidableEq α`.
+
+Rigorous review rejected the proof before admission: the argument silently converted `¬¬(a=b)` to `a=b`, i.e. used equality stability / classical reasoning.
+
+### Verified O5 theorem 1
+
+File: `equational_theories/FiniteOverrideObstruction.lean`.
+
+`weakEqDecision_of_onePointOverride` states that a Boolean one-point override satisfying exact at-key behavior and preserving the default off-key yields, for every `a b`,
+
+`(a ≠ b) ∨ ¬¬(a = b)`.
+
+Kernel build: PASS.
+
+Axiom audit:
+
+`weakEqDecision_of_onePointOverride` — no axioms.
+
+### Rejected O5 claim 2
+
+A second candidate added equality stability `¬¬(a=b) → a=b` and attempted to return Type-valued `DecidableEq α`.
+
+Kernel verdict: FAIL.
+
+Lean rejected elimination of the proof-level `Or` into `Decidable (a=b)`, because `Or.casesOn` may eliminate only into `Prop`. Thus even a proof of `(a=b) ∨ (a≠b)` is not automatically computational `Decidable (a=b)` data.
+
+### Verified O5 theorem 2
+
+`eqOrNe_of_onePointOverride_of_stableEq` stays in `Prop`: with the override primitive plus stable equality, it yields `(a = b) ∨ (a ≠ b)`.
+
+Kernel build: PASS.
+
+Axiom audit:
+
+`eqOrNe_of_onePointOverride_of_stableEq` — no axioms.
+
+### O5 verdict
+
+`VERIFIED_O5_WEAK_EQUALITY_OVERRIDE_BOUNDARY`.
+
+Strict interpretation:
+
+- the current override route does **not** constructively yield `DecidableEq`;
+- it does yield inequality versus double-negated equality with no axioms;
+- stable equality upgrades this to a proposition-level equality split with no axioms;
+- extracting Type-valued decidability is an additional computational/logical step;
+- this does **not** prove generic completeness without `DecidableEq` impossible.
+
+## Architectural residual exposed by O5
+
+The strongest remaining obstruction is a matched syntax/semantics representation pair:
+
+- `derive'.SubstAx` asks for a total substitution on the original variable type;
+- `satisfies` quantifies over total valuations on that type;
+- a law itself observes only finitely many occurrences.
+
+A tempting next move is:
+
+`TOTAL_SUBSTITUTION / TOTAL_VALUATION` → `SUPPORT_LOCAL_SUBSTITUTION / SUPPORT_LOCAL_VALUATION`.
+
+But per-occurrence representatives create a coherence obligation: repeated occurrences carrying the same variable label must receive compatible representatives. Choosing a canonical occurrence requires either equality discrimination or a route through proof-level membership that cannot in general be eliminated into Type-valued data.
+
+Next named residual:
+
+`SUPPORT_COHERENCE_AND_EXTRACTION`.
+
+A support-local calculus remains a representation experiment, but would require independently verified (1) soundness/completeness internally and (2) conservativity/translation back to existing `derive'`. The second step is precisely where total-map extraction may reappear.
 
 ## Verification history
 
-A targeted workflow `.github/workflows/rigorous-lean-flywheel.yml` was added.
+O1–O4:
 
-Run 1: failed semantically at a Law43 extensional adapter mismatch; O1 and O2 had already built.
+- first semantic failure: Law43 extensional adapter mismatch;
+- intervention: missing `apply_ite` normalization;
+- subsequent target builds: PASS;
+- first O4 audit had missing imports for O2/O3 names;
+- hardened baseline-vs-intervention audit: PASS;
+- one `lake update` SSL reset classified infrastructure-only and passed on rerun.
 
-Intervention: add the missing `apply_ite` normalization.
+O5:
 
-Run 2: all target modules built; first axiom audit showed the O4 results lacked `Classical.choice`, but O2/O3 audit names were missing their import.
+- first overstrong `DecidableEq` argument rejected for hidden double-negation elimination;
+- corrected weak separator introduced;
+- attempted stable-equality → `DecidableEq` failed because proof-level `Or` cannot eliminate into Type-valued `Decidable`;
+- corrected stable-equality theorem kept its conclusion in `Prop`;
+- both corrected O5 theorems kernel-built;
+- both corrected O5 theorems axiom-audited with no dependencies;
+- O5 verification was reduced to the O4/O5 dependency cone;
+- transient dependency restoration now retries;
+- workflow concurrency cancels superseded same-branch runs to avoid repeated verification cost.
 
-Audit harness was hardened with the missing import, `pipefail`, baseline declarations, and failure checks.
-
-Run 3 first attempt: infrastructure-only SSL reset during `lake update`.
-
-Run 3 rerun: PASS. All targets built and the hardened baseline-vs-intervention axiom audit passed.
-
-This sequence is itself classified correctly as residual → intervention → verifier rather than hiding failed runs.
+Failures remain part of the ledger rather than being hidden.
 
 ## Current evidence levels
 
@@ -161,15 +253,20 @@ This sequence is itself classified correctly as residual → intervention → ve
 
 `VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`
 
+`VERIFIED_O5_WEAK_EQUALITY_OVERRIDE_BOUNDARY`
+
 Still NOT established:
 
 - matched-budget natural developmental dependence;
 - frontier expansion caused by prior capability state;
 - open-ended compounding;
-- full choice-free completeness for arbitrary variable types.
+- full choice-free completeness for arbitrary variable types;
+- impossibility of a different constructive proof of generic completeness.
 
 ## Next separators
 
-1. Determine whether the `DecidableEq` assumption can be removed without reintroducing `Classical.choice`, or isolate a formal obstruction showing why a total substitution requires an equality/selection principle.
-2. Freeze a new natural theorem residual before solution inspection and compare cold / O1 / O1+O2 / O1+O2+O3 / accumulated-state arms under matched proof-search budget.
-3. Treat O4 as installed capital only within its verified scope; do not generalize the result beyond decidable variable languages.
+1. Test whether a support-local syntax/semantics pair can avoid `TOTAL-MAP EXTRACTION` without moving the same coherence problem elsewhere.
+2. Separate support occurrence enumeration (constructive via `toList`) from variable-identity coherence, so `[DecidableEq]` is not blamed for work it is not doing.
+3. If a support-local calculus is viable, test conservativity back to `derive'` independently from its internal soundness/completeness.
+4. Freeze a new natural theorem residual before solution inspection and compare cold / O1 / O1+O2 / O1+O2+O3 / accumulated-state arms under matched proof-search budget.
+5. Treat O4 and O5 as installed capital only within their verified scopes; do not upgrade to generic choice-free completeness or compounding without the corresponding separators.
