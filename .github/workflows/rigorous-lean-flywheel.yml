@@ -44,6 +44,8 @@ jobs:
           lake build equational_theories.CompletenessSupportResources
           lake build equational_theories.CompletenessSingletonSupport
           lake build equational_theories.CompletenessIndexedSupport
+          lake build equational_theories.SupportLocalConservativity
+          lake build equational_theories.SupportLocalExistentialConservativity
       - name: Axiom audit
         run: |
           set -o pipefail
@@ -57,6 +59,8 @@ jobs:
           import equational_theories.CompletenessSupportResources
           import equational_theories.CompletenessSingletonSupport
           import equational_theories.CompletenessIndexedSupport
+          import equational_theories.SupportLocalConservativity
+          import equational_theories.SupportLocalExistentialConservativity
           #print axioms FreeMagma.evalInMagma_congr
           #print axioms FreeMagma.eval_termDefinable
           #print axioms FreeMagma.eval_comp_termDefinable
@@ -82,13 +86,19 @@ jobs:
           #print axioms chooseFinFamily
           #print axioms supportQuotientLift_of_indexing
           #print axioms Completeness'_indexedSupport
+          #print axioms SupportRetractionData.toSupportRetract
+          #print axioms totalizeSupportAssignment_of_data_agree
+          #print axioms derive'_of_deriveSupport'_retractionData
+          #print axioms totalization_merely_exists_of_retract
+          #print axioms nonempty_derive'_of_deriveSupport'_retractable
+          #print axioms nonempty_deriveSupport'_iff_nonempty_derive'_of_retractable
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq|occurrenceLift_exists|occurrenceLift_eval_eq_embed|eval_has_occurrence_rep|occurrence_representatives_derivably_equal|supportSubst_eq_eval_of_agree|deriveSupport'_of_derive'|supportRetract_iff_allValuationExtensions|isModel_supportResources|Completeness'_supportResources|supportRetract_of_singletonSupport|Completeness'_singletonSupport|chooseFinFamily|supportQuotientLift_of_indexing|Completeness'_indexedSupport).*Classical.choice" /tmp/axioms.txt; then
+          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq|occurrenceLift_exists|occurrenceLift_eval_eq_embed|eval_has_occurrence_rep|occurrence_representatives_derivably_equal|supportSubst_eq_eval_of_agree|deriveSupport'_of_derive'|supportRetract_iff_allValuationExtensions|isModel_supportResources|Completeness'_supportResources|supportRetract_of_singletonSupport|Completeness'_singletonSupport|chooseFinFamily|supportQuotientLift_of_indexing|Completeness'_indexedSupport|toSupportRetract|totalizeSupportAssignment_of_data_agree|derive'_of_deriveSupport'_retractionData|totalization_merely_exists_of_retract|nonempty_derive'_of_deriveSupport'_retractable|nonempty_deriveSupport'_iff_nonempty_derive'_of_retractable).*Classical.choice" /tmp/axioms.txt; then
             echo 'Classical.choice unexpectedly appears in a verified flywheel target.'
             exit 1
           fi
