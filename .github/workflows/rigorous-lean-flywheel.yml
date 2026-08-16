@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel-o32
+      - agent/rigorous-lean-capital-flywheel-o33
   workflow_dispatch:
 
 concurrency:
@@ -29,27 +29,27 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O32 dependency cone
+      - name: Build O33 dependency cone
         run: |
-          lake build equational_theories.AssociativityQuotientNormalizer
           lake build equational_theories.InvariantReconstructionNormalizer
+          lake build equational_theories.ModelReconstructionNormalizer
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.InvariantReconstructionNormalizer
-          #print axioms QuotientNormalizerData.ofInvariantReconstruction
-          #print axioms contextQuotientSections_of_invariantReconstruction
-          #print axioms Completeness'_invariantReconstruction
-          #print axioms invariantReconstructionData_associativity
-          #print axioms contextQuotientSections_associativity_viaInvariant
+          import equational_theories.ModelReconstructionNormalizer
+          #print axioms InvariantReconstructionData.ofModelPackage
+          #print axioms contextQuotientSections_of_modelReconstruction
+          #print axioms Completeness'_modelReconstruction
+          #print axioms modelReconstructionPackage_associativity
+          #print axioms contextQuotientSections_associativity_viaModel
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O32 axiom audit or sorry dependency.'
+            echo 'Invalid O33 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(ofInvariantReconstruction|contextQuotientSections_of_invariantReconstruction|Completeness'_invariantReconstruction|invariantReconstructionData_associativity|contextQuotientSections_associativity_viaInvariant).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O32 targets.'
+          if grep -E "(ofModelPackage|contextQuotientSections_of_modelReconstruction|Completeness'_modelReconstruction|modelReconstructionPackage_associativity|contextQuotientSections_associativity_viaModel).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O33 targets.'
             exit 1
           fi
