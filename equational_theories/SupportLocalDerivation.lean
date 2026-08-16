@@ -14,14 +14,23 @@ def supportSubst {α β : Type} :
       supportSubst l (fun a h => σ a (.inl h)) ⋆
       supportSubst r (fun a h => σ a (.inr h))
 
-/-- Ordinary total substitution is a special case of support-local substitution. -/
-theorem supportSubst_of_total {α β : Type} (t : FreeMagma α) (σ : α → FreeMagma β) :
-    supportSubst t (fun a _ => σ a) = t ⬝ σ := by
-  induction t with
-  | Leaf a => rfl
+/-- A support-local substitution agrees with ordinary evaluation whenever a total substitution
+agrees with it on every actually occurring variable. -/
+theorem supportSubst_eq_eval_of_agree {α β : Type} (t : FreeMagma α)
+    (σ : (a : α) → t.Mem a → FreeMagma β) (τ : α → FreeMagma β)
+    (h : ∀ a ha, σ a ha = τ a) : supportSubst t σ = t ⬝ τ := by
+  induction t generalizing σ with
+  | Leaf a =>
+      simpa [supportSubst, evalInMagma] using h a rfl
   | Fork l r ihl ihr =>
       simp only [supportSubst, evalInMagma]
-      rw [ihl, ihr]
+      rw [ihl (fun a ha => σ a (.inl ha)) (fun a ha => h a (.inl ha))]
+      rw [ihr (fun a ha => σ a (.inr ha)) (fun a ha => h a (.inr ha))]
+
+/-- Ordinary total substitution is a special case of support-local substitution. -/
+theorem supportSubst_of_total {α β : Type} (t : FreeMagma α) (σ : α → FreeMagma β) :
+    supportSubst t (fun a _ => σ a) = t ⬝ σ :=
+  supportSubst_eq_eval_of_agree t (fun a _ => σ a) σ (fun _ _ => rfl)
 
 end FreeMagma
 
@@ -74,3 +83,30 @@ def deriveSupport'_of_derive' {α β : Type} {Γ : Ctx α} {E : MagmaLaw β} :
   | .Sym h => .Sym (deriveSupport'_of_derive' h)
   | .Trans h₁ h₂ => .Trans (deriveSupport'_of_derive' h₁) (deriveSupport'_of_derive' h₂)
   | .Cong h₁ h₂ => .Cong (deriveSupport'_of_derive' h₁) (deriveSupport'_of_derive' h₂)
+
+/-- With decidable equality on the axiom-variable language, every support-local derivation can be
+compiled back into the existing `derive'` calculus. The only nontrivial case totalizes a
+support-local assignment by testing membership and using one visible support value as the default.
+This is the conservativity boundary exposed by O8. -/
+def derive'_of_deriveSupport'_decidable {α β : Type} [DecidableEq α]
+    {Γ : Ctx α} {E : MagmaLaw β} : deriveSupport' Γ E → derive' Γ E
+  | .SubstAxSupport (E := A) h σ => by
+      let d : FreeMagma β := σ A.lhs.first (.inl A.lhs.first_mem)
+      let τ : α → FreeMagma β := fun a => if ha : A.Mem a then σ a ha else d
+      have hagree : ∀ a (ha : A.Mem a), σ a ha = τ a := by
+        intro a ha
+        simp [τ, ha]
+      have hl : FreeMagma.supportSubst A.lhs (fun a ha => σ a (.inl ha)) = A.lhs ⬝ τ :=
+        FreeMagma.supportSubst_eq_eval_of_agree A.lhs _ τ
+          (fun a ha => hagree a (.inl ha))
+      have hr : FreeMagma.supportSubst A.rhs (fun a ha => σ a (.inr ha)) = A.rhs ⬝ τ :=
+        FreeMagma.supportSubst_eq_eval_of_agree A.rhs _ τ
+          (fun a ha => hagree a (.inr ha))
+      rw [Law.MagmaLaw.supportSubst, hl, hr]
+      exact derive'.SubstAx h τ
+  | .Ref => .Ref
+  | .Sym h => .Sym (derive'_of_deriveSupport'_decidable h)
+  | .Trans h₁ h₂ => .Trans (derive'_of_deriveSupport'_decidable h₁)
+      (derive'_of_deriveSupport'_decidable h₂)
+  | .Cong h₁ h₂ => .Cong (derive'_of_deriveSupport'_decidable h₁)
+      (derive'_of_deriveSupport'_decidable h₂)
