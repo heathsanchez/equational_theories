@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel-o25
+      - agent/rigorous-lean-capital-flywheel-o26
   workflow_dispatch:
 
 concurrency:
@@ -29,28 +29,31 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O25 dependency cone
+      - name: Build O26 dependency cone
         run: |
-          lake build equational_theories.CanonicalQuotientSection
           lake build equational_theories.LeftProjectionCanonicalSection
+          lake build equational_theories.AmbientLeftProjectionCompleteness
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.LeftProjectionCanonicalSection
-          #print axioms derive'_leftProjection_first_eq
-          #print axioms derive'_leftProjection_reduce
-          #print axioms FreeMagmaWithLaws.unembedLeftProjection
-          #print axioms FreeMagmaWithLaws.embed_unembedLeftProjection
-          #print axioms quotientRepresentativeData_leftProjection
-          #print axioms supportQuotientLift_leftProjection
+          import equational_theories.AmbientLeftProjectionCompleteness
+          #print axioms derive'_ambientLeftProjection_first_eq
+          #print axioms derive'_ambientLeftProjection_reduce
+          #print axioms FreeMagmaWithLaws.unembedAmbientLeftProjection
+          #print axioms FreeMagmaWithLaws.embed_unembedAmbientLeftProjection
+          #print axioms quotientRepresentativeData_ambientLeftProjection
+          #print axioms supportRetractionData_ambientLeftProjection
+          #print axioms supportQuotientLift_ambientLeftProjection
+          #print axioms contextSupportRetract_ambientLeftProjection
+          #print axioms Completeness'_ambientLeftProjection
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O25 axiom audit or sorry dependency.'
+            echo 'Invalid O26 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(derive'_leftProjection_first_eq|derive'_leftProjection_reduce|unembedLeftProjection|embed_unembedLeftProjection|quotientRepresentativeData_leftProjection|supportQuotientLift_leftProjection).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O25 targets.'
+          if grep -E "(derive'_ambientLeftProjection_first_eq|derive'_ambientLeftProjection_reduce|unembedAmbientLeftProjection|embed_unembedAmbientLeftProjection|quotientRepresentativeData_ambientLeftProjection|supportRetractionData_ambientLeftProjection|supportQuotientLift_ambientLeftProjection|contextSupportRetract_ambientLeftProjection|Completeness'_ambientLeftProjection).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O26 targets.'
             exit 1
           fi
