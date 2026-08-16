@@ -20,7 +20,12 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Restore Lake packages
-        run: lake update
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
       - name: Build flywheel capabilities
         run: |
           lake build equational_theories.FreeMagmaEvalCongr
@@ -46,7 +51,8 @@ jobs:
           #print axioms Completeness'_decidableVars
           #print axioms Completeness_decidableVars
           #print axioms CompletenessNat_noGlobalChoice
-          #print axioms decidableEq_of_onePointOverride
+          #print axioms weakEqDecision_of_onePointOverride
+          #print axioms decidableEq_of_onePointOverride_of_stableEq
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
