@@ -20,86 +20,106 @@ Both accepted repairs require the same structural fact:
 E1 introduced this as `FreeMagma.evalInMagma_congr` inside `Definability/Law46.lean`.
 E2 independently rebuilt the same recursive induction locally as `eval_eq_on_mem`.
 
-Intervention:
+Intervention: `equational_theories/FreeMagmaEvalCongr.lean`.
 
-`equational_theories/FreeMagmaEvalCongr.lean`
-
-Law46 and Law43 now consume that shared capability.
-
-Evidence state:
-
-- OBSERVED: same mechanism was independently paid for in E1 and E2.
-- CAUSAL-COST candidate: installing O1 removes the local recursive congruence proof from the E2 construction.
-- TRANSFER SEARCH: no clean source-distinct third consumer has yet been found.
-- NOT YET ADMITTED: the branch has not received a Lean kernel/build verdict in this environment.
-- NOT COMPOUNDING: no later natural frontier expansion is licensed from O1.
+Evidence:
+- repeated mechanism: OBSERVED;
+- source-level later-search compression on Law43: CANDIDATE;
+- third natural consumer: NOT FOUND;
+- kernel/build verdict: PENDING;
+- compounding: NOT CLAIMED.
 
 ## Residual exposed after O1
 
-After removing the duplicated evaluation-congruence induction, Law43 and Law46 still independently hand-build essentially the same first-order witness:
+Law43 and Law46 still independently hand-built the bridge from a `FreeMagma` expression to a first-order `Set.TermDefinable` witness. Tarski543 contained a third independently written instance of the same bridge in its private `termDef` lemma.
 
-1. start with a `FreeMagma` expression over two arguments;
-2. translate it to the first-order magma language;
-3. use that term as the witness for `Set.TermDefinable`;
-4. prove realization agrees with free-magma evaluation.
+## O2 — FreeMagma evaluator to term-definability
 
-Tarski543 contains a third, independently written instance of this same bridge in its private `termDef` lemma.
-
-This repeated cost became the candidate next capability.
-
-## O2 — FreeMagma evaluator to term-definability bridge
-
-Intervention:
-
-`equational_theories/Definability/FreeMagmaTerm.lean`
+Intervention: `equational_theories/Definability/FreeMagmaTerm.lean`.
 
 Capability:
 
 > Any `FreeMagma (Fin 2)` evaluator is automatically term-definable in the underlying magma language.
 
-Current consumers on the experiment branch:
+Candidate consumers:
+- Law43;
+- Law46;
+- Tarski543.
 
-- Law43: remap the relevant natural-number variables to `Fin 2`, then invoke O2.
-- Law46: map every variable of `L.lhs` to argument 0, then invoke O2.
-- Tarski543: represent `x ◇ ((x ◇ x) ◇ y)` as a `FreeMagma (Fin 2)`, then invoke O2.
+The previous Tarski543 proof explicitly constructed nested first-order function syntax and simplified its realization. O2 reduces that to the mathematical FreeMagma expression plus one bridge application.
 
-The old Tarski543 witness explicitly constructed nested `Functions.apply₂` syntax and simplified its realization. O2 reduces that to the mathematical expression plus one reusable theorem application.
+Evidence:
+- repeated semantic mechanism across three sites: OBSERVED;
+- cross-site source-level reuse: CANDIDATE PASS;
+- first-order witness boilerplate compression: PASS at source level;
+- kernel/build verdict: PENDING;
+- natural developmental dependence: NOT TESTED;
+- compounding: NOT CLAIMED.
 
-## O2 evidence state
+## Residual exposed after O2
 
-- REPEATED-MECHANISM: PASS at source level; the same semantic bridge occurs in three proof sites.
-- CROSS-SITE REUSE: candidate PASS; the branch now routes all three sites through one constructor.
-- REPRESENTATION COMPRESSION: PASS at source level; first-order syntax construction is no longer repeated at each consumer.
-- KERNEL VALIDATION: PENDING. No claim of Lean acceptance until the branch receives a build/kernel verdict.
-- NATURAL DEVELOPMENTAL DEPENDENCE: NOT TESTED. Tarski543 is an existing proof, not a later natural acquisition episode caused by O2.
-- COMPOUNDING: NOT CLAIMED.
+Law43 and Law46 still separately performed the same adapter step:
+
+`FreeMagma α` → map each source variable to argument 0 or 1 → `FreeMagma (Fin 2)` → O2.
+
+Because O2 already exists, this adapter can be acquired by composition rather than by constructing another first-order witness proof.
+
+## O3 — mapped-variable term-definability
+
+Derived capability in `Definability/FreeMagmaTerm.lean`:
+
+`FreeMagma.eval_comp_termDefinable`.
+
+Statement:
+
+> For any `t : FreeMagma α` and any map `σ : α → Fin 2`, the binary evaluator `v ↦ t ⬝ (v ∘ σ)` is term-definable.
+
+Construction cost with O2 installed is essentially one composition:
+
+`fmapHom σ t` + O2 + `evalInMagma_fmapHom`.
+
+Law43 and Law46 now invoke O3 directly rather than explicitly constructing the mapped `FreeMagma (Fin 2)` and invoking O2 themselves.
+
+## O2 → O3 developmental signature
+
+This is the first recursive-cost candidate in the branch:
+
+- before O2, proving O3 directly would require reconstructing the first-order witness bridge;
+- after O2, O3 is a small derived theorem obtained by composition with an existing FreeMagma law;
+- O3 then compresses two existing consumers.
+
+Verdict: `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION`.
+
+This is not yet `COMPOUNDING` because:
+- the branch has no Lean kernel/build verdict;
+- O3 was deliberately sought from the residual exposed by O2 rather than arising in a frozen later natural episode;
+- no matched cold/sham/disabled acquisition experiment has been run.
+
+## Infrastructure residual
+
+GitHub reports zero Actions runs for the experiment branch. The available integration receives HTTP 403 when querying repository Actions permissions. Therefore the absence of CI is classified strictly as infrastructure/verification unavailable, not as semantic success or failure.
 
 ## Required next separator
 
-The next useful test is not another cleanup. Find a natural live proof residual E3 for which O2 is available before acquisition.
+Find or generate a live natural proof residual E3 before inspecting its proof solution and run matched acquisition arms:
 
-Compare under matched proof/search budgets:
+1. cold base;
+2. O1 only;
+3. O1 + O2;
+4. O1 + O2 + O3;
+5. sham helpers with matched context/size;
+6. O3 present but disabled.
 
-1. cold base without O1/O2;
-2. base + O1 only;
-3. base + O1 + O2;
-4. sham helpers of similar context/size;
-5. O2 present but disabled.
+A developmental positive requires that the accumulated capability state changes acquisition under a frozen budget: solve/no-solve, calls/tokens/attempts, time-to-first-kernel-valid proof, or which next reusable abstraction is discovered.
 
-A developmental positive requires that O2 changes acquisition, not merely final source length: for example E3 is solved only with O2, is found materially earlier with O2, or O2 changes which next abstraction is discovered under the same budget.
-
-## Fail conditions
-
-- O1/O2 merely shorten source code after proofs are already known.
-- Either capability is semantically redundant with an existing imported theorem.
-- Gains arise from extra context or search budget.
-- The abstraction does not survive source-distinct transfer.
-- Kernel/build verification fails.
-
-## Current verdict
+## Current verdicts
 
 `RETAIN_CANDIDATE_O1_SUPPORT_CONGRUENCE`
 
 `RETAIN_CANDIDATE_O2_FREEMAGMA_TERM_BRIDGE`
 
-The branch now demonstrates two successive compression steps: solving exposed duplicated evaluation reasoning; compiling that exposed a second repeated term-witness construction; compiling the second gives three candidate consumers. This is flywheel-shaped behavior, but not yet evidence of natural compounding or frontier expansion.
+`RETAIN_CANDIDATE_O3_MAPPED_TERM_BRIDGE`
+
+`CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`
+
+No frontier-expansion or natural compounding claim is licensed yet.
