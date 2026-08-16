@@ -44,14 +44,14 @@ jobs:
           #print axioms Completeness_decidableVars
           #print axioms CompletenessNat_noGlobalChoice
           #print axioms weakEqDecision_of_onePointOverride
-          #print axioms decidableEq_of_onePointOverride_of_stableEq
+          #print axioms eqOrNe_of_onePointOverride_of_stableEq
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|decidableEq_of_onePointOverride_of_stableEq).*Classical.choice" /tmp/axioms.txt; then
+          if grep -E "(isModel_decidableVars|Completeness'_decidableVars|Completeness_decidableVars|CompletenessNat_noGlobalChoice|weakEqDecision_of_onePointOverride|eqOrNe_of_onePointOverride_of_stableEq).*Classical.choice" /tmp/axioms.txt; then
             echo 'Classical.choice remains in an O4/O5 target.'
             exit 1
           fi
