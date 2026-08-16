@@ -1,6 +1,6 @@
 import Batteries.Data.List.Basic
 import equational_theories.Definability.Basic
-import equational_theories.Definability.EvalCongr
+import equational_theories.FreeMagmaEvalCongr
 import equational_theories.Definability.Simple
 import equational_theories.Equations.All
 
