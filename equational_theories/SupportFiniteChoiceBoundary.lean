@@ -5,15 +5,10 @@ import equational_theories.OccurrenceMaterializationPropBoundary
 open FreeMagma
 open Law
 
-/-- Type-valued family choice over the propositionally described support of one law, with the
-result kept under `Nonempty` so the whole principle itself lives in `Prop`. -/
 def SupportFamilyChoice {α : Type} (E : MagmaLaw α) : Prop :=
   ∀ (P : {a : α // E.Mem a} → Type),
     (∀ s, Nonempty (P s)) → Nonempty (∀ s, P s)
 
-/-- Abstract support-family choice is sufficient to obtain O10's support-indexed quotient section:
-each support variable individually has a quotient representative, and the family-choice principle
-assembles them coherently into one support-indexed function. -/
 theorem supportIndexedSection_of_supportFamilyChoice {δ α : Type}
     (Γ : Ctx δ) (E : MagmaLaw α) (hchoice : SupportFamilyChoice E) :
     SupportIndexedQuotientSection Γ E := by
@@ -27,48 +22,41 @@ theorem supportIndexedSection_of_supportFamilyChoice {δ α : Type}
   obtain ⟨g⟩ := hchoice P hP
   exact ⟨fun s => (g s).1, fun s => (g s).2⟩
 
-/-- Hence support-family choice supplies the quotient-lifting half of O10. -/
 theorem supportQuotientLift_of_supportFamilyChoice {δ α : Type}
     (Γ : Ctx δ) (E : MagmaLaw α) (hchoice : SupportFamilyChoice E) :
     SupportQuotientLift Γ E :=
   (supportQuotientLift_iff_supportIndexedSection Γ E).2
     (supportIndexedSection_of_supportFamilyChoice Γ E hchoice)
 
-/-- The smallest nontrivial support: a law whose combined occurrence tree is exactly two leaves. -/
 def twoLeafSupportLaw {α : Type} (a b : α) : MagmaLaw α :=
   (Lf a) ≃ (Lf b)
 
-/-- Family choice over just the support of the two-leaf law already lets us materialize every known
-membership witness into a concrete left/right occurrence position. -/
-theorem twoLeafMemPositionData_of_supportFamilyChoice {α : Type} (a b : α)
+/-- Correct Prop-level consequence. The stronger actual-data theorem is rejected by Prop→Type
+elimination. -/
+theorem nonempty_twoLeafMemPositionData_of_supportFamilyChoice {α : Type} (a b : α)
     (hchoice : SupportFamilyChoice (twoLeafSupportLaw a b)) :
-    MemPositionData (Lf a ⋆ Lf b) := by
+    Nonempty (MemPositionData (Lf a ⋆ Lf b)) := by
   let E := twoLeafSupportLaw a b
   let t : FreeMagma α := Lf a ⋆ Lf b
   let P : {x : α // E.Mem x} → Type := fun s =>
     {p : OccurrencePos t // occurrenceLabel t p = s.1}
   have hP : ∀ s, Nonempty (P s) := by
     intro s
-    have hm : Mem s.1 t := by
-      exact s.2
+    have hm : Mem s.1 t := s.2
     simpa [P, t] using mem_has_occurrence_position s.1 t hm
   obtain ⟨g⟩ := hchoice P hP
-  refine {
+  refine ⟨{
     locate := fun x hx => (g ⟨x, hx⟩).1
-    label_locate := ?_ }
+    label_locate := ?_ }⟩
   intro x hx
   exact (g ⟨x, hx⟩).2
 
-/-- Decision-changing boundary: the apparently innocuous ability to choose a Type-valued family
-over a propositionally finite two-leaf support already separates equality of those two labels. -/
 theorem eqOrNe_of_twoLeafSupportFamilyChoice {α : Type} (a b : α)
     (hchoice : SupportFamilyChoice (twoLeafSupportLaw a b)) :
     a = b ∨ a ≠ b := by
-  exact eqOrNe_of_twoLeafMemPositionData a b
-    (twoLeafMemPositionData_of_supportFamilyChoice a b hchoice)
+  obtain ⟨d⟩ := nonempty_twoLeafMemPositionData_of_supportFamilyChoice a b hchoice
+  exact eqOrNe_of_twoLeafMemPositionData a b d
 
-/-- A genuine decidable-equality resource supplies support-family choice via O15/O16 occurrence
-materialization and structural finite choice. -/
 theorem supportFamilyChoice_of_decidableEq {α : Type} [DecidableEq α]
     (E : MagmaLaw α) : SupportFamilyChoice E := by
   intro P hP
