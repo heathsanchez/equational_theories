@@ -29,14 +29,20 @@ def rightAssocList {β : Type} : (xs : List β) → xs ≠ [] → FreeMagma β
 private theorem rightAssocList_proof_irrel {β : Type} (xs : List β)
     (h₁ h₂ : xs ≠ []) : rightAssocList xs h₁ = rightAssocList xs h₂ := by
   have hp : h₁ = h₂ := Subsingleton.elim _ _
-  subst hp
+  cases hp
   rfl
+
+private theorem rightAssocList_congr {β : Type} {xs ys : List β}
+    (h : xs = ys) (hxs : xs ≠ []) (hys : ys ≠ []) :
+    rightAssocList xs hxs = rightAssocList ys hys := by
+  subst ys
+  exact rightAssocList_proof_irrel xs hxs hys
 
 private theorem append_ne_nil_left {β : Type} {xs ys : List β} (hxs : xs ≠ []) :
     xs ++ ys ≠ [] := by
-  intro h
-  have hx : xs = [] := (List.append_eq_nil.mp h).1
-  exact hxs hx
+  cases xs with
+  | nil => exact False.elim (hxs rfl)
+  | cons a as => simp
 
 /-- One primitive associativity rewrite. -/
 def derive'_associativity_step {β : Type} (a b c : FreeMagma β) :
@@ -64,8 +70,7 @@ def derive'_assoc_canon_append {β : Type} :
       | nil =>
           cases ys with
           | nil => exact False.elim (hys rfl)
-          | cons b bs =>
-              exact derive'.Ref
+          | cons b bs => exact derive'.Ref
       | cons b bs =>
           let tail : List β := b :: bs
           have htail : tail ≠ [] := by simp [tail]
@@ -85,8 +90,7 @@ def associativityNormalize {β : Type} (t : FreeMagma β) : FreeMagma β :=
 private theorem associativityNormalize_eq_of_toList_eq {β : Type} {x y : FreeMagma β}
     (h : x.toList = y.toList) : associativityNormalize x = associativityNormalize y := by
   unfold associativityNormalize
-  cases h
-  exact rightAssocList_proof_irrel _ _ _
+  exact rightAssocList_congr h _ _
 
 /-- Every term is derivably equal, using associativity alone, to its canonical right-associated
 normal form. -/
@@ -111,13 +115,16 @@ theorem derive'_associativity_toList_eq {β : Type} {x y : FreeMagma β}
     have hEq : E = associativityLaw := by
       simpa [associativityCtx] using hE
     subst E
-    simp [associativityLaw, FreeMagma.evalInMagma, List.append_assoc]
+    change (φ none ++ φ (some false)) ++ φ (some true) =
+      φ none ++ (φ (some false) ++ φ (some true))
+    exact List.append_assoc _ _ _
   have eval_toList : ∀ t : FreeMagma β, t ⬝ (fun b => [b]) = t.toList := by
     intro t
     induction t with
     | Leaf a => rfl
     | Fork l r ihl ihr =>
-        simp [FreeMagma.evalInMagma, ihl, ihr, FreeMagma.toList]
+        change (l ⬝ (fun b => [b])) ++ (r ⬝ (fun b => [b])) = l.toList ++ r.toList
+        rw [ihl, ihr]
   have hxy : x ⬝ (fun b => [b]) = y ⬝ (fun b => [b]) :=
     (Soundness'_u d hmodel) (fun b => [b])
   calc
