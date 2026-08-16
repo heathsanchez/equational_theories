@@ -1,7 +1,7 @@
 # Rigorous Lean Flywheel v1
 
 ## Question
-Can a proof mechanism discovered in one natural Lean repair be compiled into reusable capability capital that reduces the acquisition cost of a later natural repair?
+Can natural Lean repairs be converted into reusable capability capital so that later proof acquisition pays less repeated search cost and exposes the next abstraction automatically?
 
 ## Frozen historical sequence
 
@@ -11,7 +11,7 @@ Can a proof mechanism discovered in one natural Lean repair be compiled into reu
 
 The ordering is historical. E2 is not treated as caused by E1.
 
-## Repeated mechanism
+## O1 — evaluation on support
 
 Both accepted repairs require the same structural fact:
 
@@ -20,46 +20,86 @@ Both accepted repairs require the same structural fact:
 E1 introduced this as `FreeMagma.evalInMagma_congr` inside `Definability/Law46.lean`.
 E2 independently rebuilt the same recursive induction locally as `eval_eq_on_mem`.
 
-## Intervention O1
-
-Compile the repeated mechanism once at the generic `FreeMagma` layer:
+Intervention:
 
 `equational_theories/FreeMagmaEvalCongr.lean`
 
-Then make Law46 and Law43 consume that shared capability.
+Law46 and Law43 now consume that shared capability.
 
-## Current evidence state
+Evidence state:
 
 - OBSERVED: same mechanism was independently paid for in E1 and E2.
 - CAUSAL-COST candidate: installing O1 removes the local recursive congruence proof from the E2 construction.
+- TRANSFER SEARCH: no clean source-distinct third consumer has yet been found.
 - NOT YET ADMITTED: the branch has not received a Lean kernel/build verdict in this environment.
-- NOT COMPOUNDING: no third natural episode has yet been shown to become solvable or materially cheaper because O1 is installed.
+- NOT COMPOUNDING: no later natural frontier expansion is licensed from O1.
+
+## Residual exposed after O1
+
+After removing the duplicated evaluation-congruence induction, Law43 and Law46 still independently hand-build essentially the same first-order witness:
+
+1. start with a `FreeMagma` expression over two arguments;
+2. translate it to the first-order magma language;
+3. use that term as the witness for `Set.TermDefinable`;
+4. prove realization agrees with free-magma evaluation.
+
+Tarski543 contains a third, independently written instance of this same bridge in its private `termDef` lemma.
+
+This repeated cost became the candidate next capability.
+
+## O2 — FreeMagma evaluator to term-definability bridge
+
+Intervention:
+
+`equational_theories/Definability/FreeMagmaTerm.lean`
+
+Capability:
+
+> Any `FreeMagma (Fin 2)` evaluator is automatically term-definable in the underlying magma language.
+
+Current consumers on the experiment branch:
+
+- Law43: remap the relevant natural-number variables to `Fin 2`, then invoke O2.
+- Law46: map every variable of `L.lhs` to argument 0, then invoke O2.
+- Tarski543: represent `x ◇ ((x ◇ x) ◇ y)` as a `FreeMagma (Fin 2)`, then invoke O2.
+
+The old Tarski543 witness explicitly constructed nested `Functions.apply₂` syntax and simplified its realization. O2 reduces that to the mathematical expression plus one reusable theorem application.
+
+## O2 evidence state
+
+- REPEATED-MECHANISM: PASS at source level; the same semantic bridge occurs in three proof sites.
+- CROSS-SITE REUSE: candidate PASS; the branch now routes all three sites through one constructor.
+- REPRESENTATION COMPRESSION: PASS at source level; first-order syntax construction is no longer repeated at each consumer.
+- KERNEL VALIDATION: PENDING. No claim of Lean acceptance until the branch receives a build/kernel verdict.
+- NATURAL DEVELOPMENTAL DEPENDENCE: NOT TESTED. Tarski543 is an existing proof, not a later natural acquisition episode caused by O2.
+- COMPOUNDING: NOT CLAIMED.
 
 ## Required next separator
 
-Find a source-distinct natural theorem or historical repair E3 with a residual that requires agreement of evaluations on the variables occurring in a `FreeMagma` term.
+The next useful test is not another cleanup. Find a natural live proof residual E3 for which O2 is available before acquisition.
 
-Compare under a matched proof/search budget:
+Compare under matched proof/search budgets:
 
-1. cold base without O1;
-2. base + O1;
-3. sham helper of similar size but irrelevant semantics;
-4. O1 present but disabled.
+1. cold base without O1/O2;
+2. base + O1 only;
+3. base + O1 + O2;
+4. sham helpers of similar context/size;
+5. O2 present but disabled.
 
-A positive result requires either:
-
-- E3 is not reached/solved cold but is reached/solved with O1; or
-- E3 is solved in both arms but O1 materially reduces acquisition cost under a precommitted measure.
+A developmental positive requires that O2 changes acquisition, not merely final source length: for example E3 is solved only with O2, is found materially earlier with O2, or O2 changes which next abstraction is discovered under the same budget.
 
 ## Fail conditions
 
-- O1 merely shortens source code after the proof is already known.
-- O1 is semantically redundant with an existing imported theorem.
-- A gain comes from extra context/search budget rather than capability state.
-- The abstraction only applies to Law43/Law46 and does not transfer.
+- O1/O2 merely shorten source code after proofs are already known.
+- Either capability is semantically redundant with an existing imported theorem.
+- Gains arise from extra context or search budget.
+- The abstraction does not survive source-distinct transfer.
+- Kernel/build verification fails.
 
 ## Current verdict
 
-`RETAIN_CANDIDATE_O1_EVAL_ON_SUPPORT_CONGRUENCE`
+`RETAIN_CANDIDATE_O1_SUPPORT_CONGRUENCE`
 
-The intervention has demonstrated a real repeated-search opportunity and a plausible cost-saving compilation, but no frontier-expansion claim is licensed yet.
+`RETAIN_CANDIDATE_O2_FREEMAGMA_TERM_BRIDGE`
+
+The branch now demonstrates two successive compression steps: solving exposed duplicated evaluation reasoning; compiling that exposed a second repeated term-witness construction; compiling the second gives three candidate consumers. This is flywheel-shaped behavior, but not yet evidence of natural compounding or frontier expansion.
