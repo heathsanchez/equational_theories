@@ -52,13 +52,15 @@ jobs:
           #print axioms indexedChoice_equiv
           #print axioms lawSupport_indexedChoice
           #print axioms lawSupport_surjectiveFamilyLiftAt
+          #print axioms quotientEmbed_lifts_onLawSupport
+          #print axioms supportRepresentativeAssignment_decidable
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
             echo 'Invalid O8 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(supportSubst_of_total|supportAssignment_proof_irrel|deriveSupport'_of_derive'|indexedChoice_of_surjective_familyLiftAt|surjective_familyLiftAt_of_indexedChoice|surjectiveFamilyLiftAt_iff_indexedChoice|fin_indexedChoice|indexedChoice_equiv|lawSupport_indexedChoice|lawSupport_surjectiveFamilyLiftAt).*Classical.choice" /tmp/axioms.txt; then
+          if grep -E "(supportSubst_of_total|supportAssignment_proof_irrel|deriveSupport'_of_derive'|indexedChoice_of_surjective_familyLiftAt|surjective_familyLiftAt_of_indexedChoice|surjectiveFamilyLiftAt_iff_indexedChoice|fin_indexedChoice|indexedChoice_equiv|lawSupport_indexedChoice|lawSupport_surjectiveFamilyLiftAt|quotientEmbed_lifts_onLawSupport|supportRepresentativeAssignment_decidable).*Classical.choice" /tmp/axioms.txt; then
             echo 'Classical.choice unexpectedly appears in O8 targets.'
             exit 1
           fi
