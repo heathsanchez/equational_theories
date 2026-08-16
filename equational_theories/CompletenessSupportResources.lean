@@ -65,7 +65,7 @@ theorem Completeness'_supportResources {α β : Type}
     (hlift : ∀ A, A ∈ Γ → SupportQuotientLift Γ A)
     (h : Γ ⊧ E) : Nonempty (Γ ⊢' E) := by
   apply FreeMagmaWithLaws.isDerives
-  exact h _ (FreeMagmaWithLaws.isModel_supportResources α Γ hret hlift)
+  exact h _ (FreeMagmaWithLaws.isModel_supportResources β Γ hret hlift)
 
 /-- O4's decidable-variable construction supplies the support-quotient-lift resource without
 requiring the contaminated `MagmaLaw.finEquiv` route. -/
