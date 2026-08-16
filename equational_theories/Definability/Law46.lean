@@ -38,9 +38,8 @@ theorem Equation46_termDefinableFrom_equalShape {L : NatMagmaLaw}
         = @Term.realize _ _ M.FOStructure _ (fun _ ↦ z) L.lhs.toTerm
     rw [FreeMagma.toTerm_realize, FreeMagma.toTerm_realize]
     exact hconst x z
-  · let t : FreeMagma (Fin 2) := FreeMagma.fmapHom (fun _ ↦ (0 : Fin 2)) L.lhs
-    simpa [Magma.FinArityOp, FreeMagma.toTerm_realize, t, FreeMagma.evalInMagma_fmapHom] using
-      (FreeMagma.eval_termDefinable (G := G) t)
+  · simpa [Magma.FinArityOp, FreeMagma.toTerm_realize, Function.comp_def] using
+      (FreeMagma.eval_comp_termDefinable (G := G) L.lhs (fun _ ↦ (0 : Fin 2)))
 
 /-- The constant law 46 `x ◇ y = z ◇ w` is TermDefinable from Equation 40 `x ◇ x = y ◇ y`. -/
 theorem Equation46_termDefinableFrom_Equation40 : Law46.TermDefinableFrom Law40 :=
