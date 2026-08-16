@@ -40,6 +40,8 @@ jobs:
           cat > /tmp/AxiomAudit.lean <<'EOF'
           import equational_theories.FunctionSpaceLiftObstruction
           #print axioms typeChoiceSchema_of_surjective_familyLift
+          #print axioms surjective_familyLift_of_typeChoiceSchema
+          #print axioms surjectiveFamilyLift_iff_typeChoiceSchema
           #print axioms embed_surjective
           #print axioms phiAsSubst_aux_is_familyLift_instance
           #print axioms phiAsSubst_aux_of_familyLift
@@ -49,7 +51,7 @@ jobs:
             echo 'Invalid O7 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(typeChoiceSchema_of_surjective_familyLift|embed_surjective|phiAsSubst_aux_of_familyLift).*Classical.choice" /tmp/axioms.txt; then
+          if grep -E "(typeChoiceSchema_of_surjective_familyLift|surjective_familyLift_of_typeChoiceSchema|surjectiveFamilyLift_iff_typeChoiceSchema|embed_surjective|phiAsSubst_aux_of_familyLift).*Classical.choice" /tmp/axioms.txt; then
             echo 'Classical.choice unexpectedly appears in constructive O7 targets.'
             exit 1
           fi
