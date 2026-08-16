@@ -4,269 +4,254 @@
 Can natural Lean repairs be converted into reusable capability capital so that later proof acquisition pays less repeated search cost and exposes the next abstraction automatically?
 
 ## Frozen historical seed
-
 - Base fork commit: `b1cc1756202d7f44e07bd4069b5df16901a36938`.
 - Natural episode E1: upstream PR #1467, Law46, merged 2026-08-13.
 - Natural episode E2: upstream PR #1461, Law43, merged 2026-08-14.
 
-The ordering is historical. E2 is not treated as caused by E1.
+Historical ordering is not treated as causal dependence.
 
-## O1 — evaluation on support
+## O1 — support-sensitive evaluation
+`FreeMagma.evalInMagma_congr`: evaluation depends only on values assigned to variables that occur in the term.
 
-Both accepted repairs required the same structural fact:
+- Kernel: PASS.
+- Axioms: none.
+- Verdict: `ADMITTED_O1_SUPPORT_CONGRUENCE`.
 
-> Evaluation of a `FreeMagma` depends only on values assigned to variables that occur in the term.
+E1 and E2 independently paid for this mechanism. O1 would remove repeated proof work, but that historical counterfactual alone is not a compounding result.
 
-E1 introduced this locally as `FreeMagma.evalInMagma_congr` inside Law46. E2 independently rebuilt essentially the same recursive induction as `eval_eq_on_mem`.
+## O2 — FreeMagma evaluator → term-definability
+`FreeMagma.eval_termDefinable` compiles a `FreeMagma (Fin 2)` evaluator into a first-order `Set.TermDefinable` witness. Reused by Law43, Law46, and Tarski543.
 
-Compiled intervention: `equational_theories/FreeMagmaEvalCongr.lean`.
-
-### Verification
-
-GitHub Actions targeted build: PASS.
-
-Axiom audit:
-
-`FreeMagma.evalInMagma_congr` — no axioms.
-
-Verdict: `ADMITTED_O1_SUPPORT_CONGRUENCE` for the theorem/capability itself.
-
-The historical counterfactual claim remains narrower: O1 would remove a repeated induction from the later Law43 proof, but this alone is not a natural compounding result.
-
-## O2 — FreeMagma evaluator to term-definability
-
-Residual exposed after O1: Law43 and Law46 still hand-built the bridge from a `FreeMagma` binary expression to a first-order `Set.TermDefinable` witness. Tarski543 contained a third independent instance.
-
-Compiled intervention: `equational_theories/Definability/FreeMagmaTerm.lean`.
-
-Capability:
-
-> Any `FreeMagma (Fin 2)` evaluator is automatically term-definable in the underlying magma language.
-
-Consumers on the experiment branch: Law43, Law46, Tarski543.
-
-### Verification
-
-Target module and all three consumer modules kernel-build: PASS.
-
-Axiom audit:
-
-`FreeMagma.eval_termDefinable` — `[propext, Quot.sound]`.
-
-Verdict: `ADMITTED_O2_FREEMAGMA_TERM_BRIDGE` as a verified reusable theorem.
+- Kernel and consumers: PASS.
+- Axioms: `[propext, Quot.sound]`.
+- Verdict: `ADMITTED_O2_FREEMAGMA_TERM_BRIDGE`.
 
 ## O3 — mapped-variable term-definability
+`FreeMagma.eval_comp_termDefinable` handles `t ⬝ (v ∘ σ)` by composing O2 with `fmapHom` laws.
 
-Residual exposed after O2: Law43 and Law46 still separately mapped source variables into binary arguments before invoking O2.
+- Kernel: PASS.
+- Axioms: `[propext, Quot.sound]`.
+- Verdict: `ADMITTED_O3_MAPPED_TERM_BRIDGE`.
+- Causal claim remains `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`; matched cold/ablation acquisition is still required.
 
-Derived capability:
+## Source-distinct target — upstream issue #499
+Issue #499 asks whether the use of choice in `Completeness` can be removed. Baseline `PhiAsSubst_aux` chooses a representative for every coordinate of an arbitrary quotient-valued valuation.
 
-`FreeMagma.eval_comp_termDefinable`.
+Baseline audits:
+- `FreeMagmaWithLaws.isModel`: `[propext, Classical.choice, Quot.sound]`.
+- `Completeness'`: `[propext, Classical.choice, Quot.sound]`.
 
-> For any `t : FreeMagma α` and `σ : α → Fin 2`, the evaluator `v ↦ t ⬝ (v ∘ σ)` is term-definable.
-
-O3 is obtained by composing `fmapHom`, O2, and `evalInMagma_fmapHom`; Law43 and Law46 invoke O3 directly.
-
-### Verification
-
-Kernel build: PASS.
-
-Axiom audit:
-
-`FreeMagma.eval_comp_termDefinable` — `[propext, Quot.sound]`.
-
-Verdict: `ADMITTED_O3_MAPPED_TERM_BRIDGE` as a theorem.
-
-Developmental interpretation remains `CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`: once O2 existed, O3 became a small composition rather than another first-order witness proof. A matched cold/ablation acquisition experiment is still required before upgrading that causal claim.
-
-## Live source-distinct target — upstream issue #499
-
-The experiment next moved outside the definability repair family. Upstream open issue #499 asks whether the use of choice in the completeness proof can be removed.
-
-Baseline implementation:
-
-`FreeMagmaWithLaws.isModel` / `Completeness'` use a global `PhiAsSubst_aux` that obtains representatives for an arbitrary quotient-valued valuation with `Classical.axiomOfChoice`.
-
-Residual classification after applying O1:
-
-`REPRESENTATION / SCOPE FAILURE`.
-
-A single law only observes finitely many variables, but the baseline proof lifts representatives for every variable in the valuation. O1 licenses forgetting everything outside the term support.
+The issue comments additionally note that the referenced Abel Agda argument works with setoids, where representative recovery is identity; it therefore does not directly settle the quotient-type problem.
 
 ## O4 — finite-support quotient lifting
+File: `CompletenessFiniteSupport.lean`.
 
-File: `equational_theories/CompletenessFiniteSupport.lean`.
+O1 licenses forgetting off-support values. `PhiAsSubst_onLawSupport` lifts representatives only where one law can observe them; the resulting model/completeness theorem family assumes `[DecidableEq α]`.
 
-Components:
+Audits:
+- `isModel_decidableVars`: `[propext, Quot.sound]`.
+- `Completeness'_decidableVars`: `[propext, Quot.sound]`.
+- `Completeness_decidableVars`: `[propext, Quot.sound]`.
+- `CompletenessNat_noGlobalChoice`: `[propext, Quot.sound]`.
 
-1. `PhiAsSubst_onLawSupport` lifts representatives only for variables occurring in `lhs` or `rhs`, using repeated `Quotient.exists_rep` on that finite list and one obtained representative as the off-support default.
-2. `FreeMagmaWithLaws.isModel_decidableVars` uses O1 to replace the original quotient valuation by the finite-support substitution only where each side can observe it.
-3. `Completeness'_decidableVars` gives Type-0 completeness for contexts whose variable language has `DecidableEq`.
-4. `Completeness_decidableVars` gives the same-variable-language form.
-5. `CompletenessNat_noGlobalChoice` gives the project-standard Nat specialization.
+No `Classical.choice`, no `sorryAx`.
 
-### Hard verification
+Verdicts:
+- `VERIFIED_SOURCE_DISTINCT_TRANSFER_O1_TO_COMPLETENESS`.
+- `VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`.
 
-Targeted GitHub Actions build: PASS for `CompletenessFiniteSupport`.
+This does not close #499 generically.
 
-Baseline axiom audit:
+## O5 — finite override / equality boundary
+File: `FiniteOverrideObstruction.lean`.
 
-- `FreeMagmaWithLaws.isModel` — `[propext, Classical.choice, Quot.sound]`.
-- `Completeness'` — `[propext, Classical.choice, Quot.sound]`.
+Rejected claim 1: a uniform one-point override primitive implies `DecidableEq α`. The attempted proof silently used double-negation elimination.
 
-Finite-support axiom audit:
+Verified:
+- `weakEqDecision_of_onePointOverride`: `(a ≠ b) ∨ ¬¬(a = b)`, no axioms.
+- with stable equality, `eqOrNe_of_onePointOverride_of_stableEq`: `(a = b) ∨ (a ≠ b)` in `Prop`, no axioms.
 
-- `FreeMagmaWithLaws.isModel_decidableVars` — `[propext, Quot.sound]`.
-- `Completeness'_decidableVars` — `[propext, Quot.sound]`.
-- `Completeness_decidableVars` — `[propext, Quot.sound]`.
-- `CompletenessNat_noGlobalChoice` — `[propext, Quot.sound]`.
+Rejected claim 2: proposition-level equality split plus stability yields Type-valued `Decidable`. Lean rejected elimination of `Or` into `Decidable`; `Or.casesOn` can eliminate only into `Prop`.
 
-No `Classical.choice`. No `sorryAx`.
+Verdict: `VERIFIED_O5_WEAK_EQUALITY_OVERRIDE_BOUNDARY`.
 
-Verdict: `VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`.
+## O6 — occurrence-local quotient lifting
+File: `OccurrenceLift.lean`.
 
-This is a real source-distinct capability transfer: O1 changed the representation of a live metatheorem residual and yielded a kernel-valid theorem family with a strictly smaller axiom dependency set.
+`OccurrenceLift Γ φ t u` allows an independent representative at each leaf occurrence. It does not deduplicate variable labels or construct a total substitution.
 
-It does not yet close issue #499 in full generality. The current theorem assumes decidable equality on the context variable type and Type-0 completeness.
+Verified:
+- `occurrenceLift_exists`.
+- `occurrenceLift_eval_eq_embed`.
+- `eval_has_occurrence_rep`.
+- `occurrence_representatives_derivably_equal`.
 
-## O5 — finite-override / equality boundary
+All audit `[propext, Quot.sound]`; no choice or decidable equality.
 
-After O4, the next question was whether `[DecidableEq α]` was accidental implementation scaffolding.
+Verdict: `VERIFIED_O6_OCCURRENCE_LOCAL_LIFT_AND_PROOF_COHERENCE`.
 
-Repository inspection isolated two implementation uses:
+Result: finite representative acquisition and proof-level repeated-variable coherence are not the obstruction.
 
-1. `FreeMagma.elems` requires `[DecidableEq α]` to deduplicate variable support. This part is avoidable in principle because `FreeMagma.toList` can enumerate occurrences with duplicates constructively.
-2. The deeper use is `derive'.SubstAx`, which requires a *total* substitution `α → FreeMagma β`. O4 therefore has to extend finitely many support representatives to a total function by repeated point overrides. The semantic side mirrors this: `satisfies` quantifies over total valuations `α → G`.
+## O7 — generic function-space lifting separator
+A generic operation that lifts every family through every surjection was formalized and shown propositionally equivalent to a Type-valued choice schema.
 
-This exposed three separate problems that should not be conflated:
+- Generic equivalence: no axioms.
+- `embed Γ` individually surjective: `[propext, Quot.sound]`.
+- baseline `PhiAsSubst_aux`: `[propext, Classical.choice, Quot.sound]`.
 
-`SUPPORT EXTRACTION` → `SUPPORT COHERENCE` → `TOTAL-MAP EXTRACTION`.
+Verdict: `VERIFIED_O7_GENERIC_FAMILY_LIFT_EQ_CHOICE`.
 
-O1 solves the semantic support problem. O4 solves support coherence and total-map construction when equality is decidable. O5 characterizes what remains when equality is not assumed decidable.
+Strict scope: this characterizes the generic lifting operation; it does not prove the special quotient completeness theorem impossible constructively.
 
-### Rejected O5 claim 1
+## O8 — support-local derivation representation
+File: `SupportLocalDerivation.lean`.
 
-The first candidate theorem claimed that a uniform one-point override primitive already implies `DecidableEq α`.
+`FreeMagma.supportSubst` and `deriveSupport'` replace the axiom rule's total substitution by a function defined only on variables accompanied by proof that they occur in the axiom.
 
-Rigorous review rejected the proof before admission: the argument silently converted `¬¬(a=b)` to `a=b`, i.e. used equality stability / classical reasoning.
+Verified clean core:
+- support substitution structural laws: no choice.
+- proof-irrelevance coherence of repeated membership proofs: no choice.
+- `deriveSupport'_of_derive'`: constructive.
+- reverse translation under `[DecidableEq α]`: `[propext, Quot.sound]`.
 
-### Verified O5 theorem 1
+Important negative: the repository's existing `MagmaLaw.finEquiv` route imports `Classical.choice`; it is disqualified as a constructive support-reification bridge.
 
-File: `equational_theories/FiniteOverrideObstruction.lean`.
+Verdict: `VERIFIED_O8_SUPPORT_LOCAL_DERIVATION_CORE`; `REJECTED_O8_FINEQUIV_AS_CHOICE_FREE_BRIDGE`.
 
-`weakEqDecision_of_onePointOverride` states that a Boolean one-point override satisfying exact at-key behavior and preserving the default off-key yields, for every `a b`,
+## O9 — semantic support boundary
+File: `SupportSemanticBoundary.lean`.
 
-`(a ≠ b) ∨ ¬¬(a = b)`.
+`SupportRetract E` asserts that the support inclusion has a retraction. `SupportValuationExtension` asks that support valuations extend to ambient valuations.
 
-Kernel build: PASS.
+Verified:
+- `supportRetract_iff_allValuationExtensions`: no axioms.
+- support/ambient satisfaction bridge under the corresponding extension resource: no `Classical.choice`; semantic theorems use at most `[propext, Quot.sound]`.
 
-Axiom audit:
+Result: global `DecidableEq` is not the intrinsic semantic requirement; support retractability is.
 
-`weakEqDecision_of_onePointOverride` — no axioms.
+Verdict: `VERIFIED_O9_SUPPORT_RETRACTION_SEMANTIC_BOUNDARY`.
 
-### Rejected O5 claim 2
+## O10 — resource-factored completeness
+File: `CompletenessSupportResources.lean`.
 
-A second candidate added equality stability `¬¬(a=b) → a=b` and attempted to return Type-valued `DecidableEq α`.
+Defined `SupportQuotientLift Γ E`: representative selection only on one law's support.
 
-Kernel verdict: FAIL.
+Verified:
+- `totalSubst_of_supportResources`.
+- `FreeMagmaWithLaws.isModel_supportResources`.
+- `Completeness'_supportResources`.
+- O4's decidable-variable construction factors through these resources.
 
-Lean rejected elimination of the proof-level `Or` into `Decidable (a=b)`, because `Or.casesOn` may eliminate only into `Prop`. Thus even a proof of `(a=b) ∨ (a≠b)` is not automatically computational `Decidable (a=b)` data.
+All audit exactly `[propext, Quot.sound]`; no `Classical.choice`.
 
-### Verified O5 theorem 2
+Verdict: `VERIFIED_O10_RESOURCE_FACTORED_COMPLETENESS`.
 
-`eqOrNe_of_onePointOverride_of_stableEq` stays in `Prop`: with the override primitive plus stable equality, it yields `(a = b) ∨ (a ≠ b)`.
+The exact per-law resources are now separated:
+1. choose representatives on support;
+2. retract/totalize support back to the old ambient interface.
 
-Kernel build: PASS.
+## O11 — singleton-support scope expansion
+File: `CompletenessSingletonSupport.lean`.
 
-Axiom audit:
+For a law whose support is propositionally one variable, a constant support retraction and one quotient representative suffice. No ambient equality decision is required.
 
-`eqOrNe_of_onePointOverride_of_stableEq` — no axioms.
+Audits:
+- `supportRetract_of_singletonSupport`: no axioms.
+- quotient-lift/context/model/completeness results: `[propext, Quot.sound]`.
 
-### O5 verdict
+Verdict: `VERIFIED_O11_SINGLETON_SUPPORT_COMPLETENESS_NO_DECIDABLE_EQ`.
 
-`VERIFIED_O5_WEAK_EQUALITY_OVERRIDE_BOUNDARY`.
+This is the first concrete Type-0 completeness class beyond O4's global `[DecidableEq α]` scope.
 
-Strict interpretation:
+## O12 — computational retraction data / proof-object boundary
+File: `SupportLocalConservativity.lean`.
 
-- the current override route does **not** constructively yield `DecidableEq`;
-- it does yield inequality versus double-negated equality with no axioms;
-- stable equality upgrades this to a proposition-level equality split with no axioms;
-- extracting Type-valued decidability is an additional computational/logical step;
-- this does **not** prove generic completeness without `DecidableEq` impossible.
+First attempt: translate `deriveSupport' → derive'` using mere `SupportRetract E : Prop`. Kernel rejected elimination of the existential retraction from `Prop` into the Type-valued `derive'` proof object. This is retained as a real negative separator.
 
-## Architectural residual exposed by O5
+Corrected resource:
+`SupportRetractionData E : Type`, carrying the actual retraction and its on-support law.
 
-The strongest remaining obstruction is a matched syntax/semantics representation pair:
+Verified:
+- `SupportRetractionData.toSupportRetract`: no axioms.
+- `totalizeSupportAssignment_of_data_agree`: no axioms.
+- `derive'_of_deriveSupport'_retractionData`: no axioms.
+- `totalization_merely_exists_of_retract`: no axioms.
+- decidable-equality adapters: `[propext, Quot.sound]`.
 
-- `derive'.SubstAx` asks for a total substitution on the original variable type;
-- `satisfies` quantifies over total valuations on that type;
-- a law itself observes only finitely many occurrences.
+Verdict: `VERIFIED_O12_PROP_VS_TYPE_RETRACTION_BOUNDARY`.
 
-A tempting next move is:
+Result: proposition-level retraction existence and computational retraction data are distinct resources when the target is a proof object in `Type`.
 
-`TOTAL_SUBSTITUTION / TOTAL_VALUATION` → `SUPPORT_LOCAL_SUBSTITUTION / SUPPORT_LOCAL_VALUATION`.
+## O13 — explicit computational finite support indexing
+File: `CompletenessIndexedSupport.lean`.
 
-But per-occurrence representatives create a coherence obligation: repeated occurrences carrying the same variable label must receive compatible representatives. Choosing a canonical occurrence requires either equality discrimination or a route through proof-level membership that cannot in general be eliminated into Type-valued data.
+`SupportIndexing E` supplies an explicit equivalence from the support subtype to `Fin n`; `RetractableSupportIndexing` additionally supplies the support retraction as data.
 
-Next named residual:
+Verified:
+- `chooseFinFamily`: `[propext]`.
+- `supportQuotientLift_of_indexing`: `[propext, Quot.sound]`.
+- indexed resource/model/completeness results: `[propext, Quot.sound]`.
 
-`SUPPORT_COHERENCE_AND_EXTRACTION`.
+Verdict: `VERIFIED_O13_EXPLICIT_INDEXED_SUPPORT_COMPLETENESS`.
 
-A support-local calculus remains a representation experiment, but would require independently verified (1) soundness/completeness internally and (2) conservativity/translation back to existing `derive'`. The second step is precisely where total-map extraction may reappear.
+Interpretation: finite Type-valued choice itself is constructive. The failed O8 `finEquiv` route was failing at *recovering computational finite support indexing from syntax*, not at choosing over `Fin n` once that indexing is supplied.
 
-## Verification history
+## O14 — existential conservativity from mere retraction
+File: `SupportLocalExistentialConservativity.lean`.
 
-O1–O4:
+Prediction from O12: because `Nonempty (derive' ...)` lives in `Prop`, mere proposition-level `SupportRetract` should suffice even though it cannot produce a direct Type-valued proof translator.
 
-- first semantic failure: Law43 extensional adapter mismatch;
-- intervention: missing `apply_ite` normalization;
-- subsequent target builds: PASS;
-- first O4 audit had missing imports for O2/O3 names;
-- hardened baseline-vs-intervention audit: PASS;
-- one `lake update` SSL reset classified infrastructure-only and passed on rerun.
+Verified:
+- `nonempty_derive'_of_deriveSupport'_retractable`: no axioms.
+- `nonempty_deriveSupport'_iff_nonempty_derive'_of_retractable`: no axioms.
 
-O5:
+Verdict: `VERIFIED_O14_EXISTENTIAL_CONSERVATIVITY_PROP_RETRACTION`.
 
-- first overstrong `DecidableEq` argument rejected for hidden double-negation elimination;
-- corrected weak separator introduced;
-- attempted stable-equality → `DecidableEq` failed because proof-level `Or` cannot eliminate into Type-valued `Decidable`;
-- corrected stable-equality theorem kept its conclusion in `Prop`;
-- both corrected O5 theorems kernel-built;
-- both corrected O5 theorems axiom-audited with no dependencies;
-- O5 verification was reduced to the O4/O5 dependency cone;
-- transient dependency restoration now retries;
-- workflow concurrency cancels superseded same-branch runs to avoid repeated verification cost.
+This operationally confirms the O12 Prop/Type boundary.
 
-Failures remain part of the ledger rather than being hidden.
+## Current resource hierarchy
+The original apparent choice problem has decomposed into:
 
-## Current evidence levels
+`GLOBAL FUNCTION-SPACE REPRESENTATIVE CHOICE`
+→ `FINITE OBSERVABLE SYNTAX`
+→ `OCCURRENCE-LOCAL REPRESENTATIVES`
+→ `VARIABLE-INDEXED SUPPORT ASSIGNMENT`
+→ `SUPPORT RETRACTION / TOTALIZATION`
+→ `PROP EXISTENCE VS TYPE DATA`
+→ `COMPUTATIONAL SUPPORT INDEXING`.
 
-`ADMITTED_O1_SUPPORT_CONGRUENCE`
+The current cumulative branch through O14 kernel-builds as one dependency cone and passes the widened transitive axiom audit.
 
-`ADMITTED_O2_FREEMAGMA_TERM_BRIDGE`
+## Current unresolved residual
+The remaining generic bottleneck is no longer simply "finite support" or "choice".
 
-`ADMITTED_O3_MAPPED_TERM_BRIDGE`
+`FreeMagma.Mem` and `MagmaLaw.Mem` encode occurrence information in `Prop` using equality and `Or`. A support-local assignment, however, returns terms in `Type`. Eliminating an `Or`-shaped membership proof into a computational leaf/index is therefore not generally available. `toList` can enumerate occurrences constructively, but assigning one computational representative per *variable label* still requires a bridge from variable identity to occurrence identity.
 
-`CANDIDATE_RECURSIVE_ACQUISITION_COST_REDUCTION_O2_TO_O3`
+Named residual:
 
-`VERIFIED_SOURCE_DISTINCT_TRANSFER_O1_TO_COMPLETENESS`
+`PROP_MEMBERSHIP_TO_COMPUTATIONAL_OCCURRENCE_MATERIALIZATION`.
 
-`VERIFIED_SCOPED_O4_FINITE_SUPPORT_QUOTIENT_LIFT`
+O15 is testing this directly with a Type-valued occurrence-position representation. It is not yet admitted in this ledger.
 
-`VERIFIED_O5_WEAK_EQUALITY_OVERRIDE_BOUNDARY`
+## External consistency check: issue #499
+The upstream issue itself records a closely related distinction: Abel's referenced proof uses setoids rather than quotient types, so representative recovery is identity there. That does not solve the quotient theorem automatically, but it independently supports treating representation as the central separator.
 
-Still NOT established:
+## Still NOT established
+- full generic choice-free completeness for arbitrary variable types;
+- impossibility of another constructive proof of generic completeness;
+- matched-budget natural developmental dependence of O2/O3;
+- frontier expansion caused by prior capability state under a frozen acquisition protocol;
+- open-ended compounding.
 
-- matched-budget natural developmental dependence;
-- frontier expansion caused by prior capability state;
-- open-ended compounding;
-- full choice-free completeness for arbitrary variable types;
-- impossibility of a different constructive proof of generic completeness.
+## Verification discipline
+- semantic failures are not reclassified as infrastructure;
+- stale theorem names in audit scripts are repaired but never counted as theorem failure;
+- transitive axiom audits reject hidden `Classical.choice` or `sorryAx` in scoped targets;
+- failed stronger claims remain in the ledger;
+- transient dependency restoration retries and branch concurrency prevent duplicated CI cost.
 
 ## Next separators
-
-1. Test whether a support-local syntax/semantics pair can avoid `TOTAL-MAP EXTRACTION` without moving the same coherence problem elsewhere.
-2. Separate support occurrence enumeration (constructive via `toList`) from variable-identity coherence, so `[DecidableEq]` is not blamed for work it is not doing.
-3. If a support-local calculus is viable, test conservativity back to `derive'` independently from its internal soundness/completeness.
-4. Freeze a new natural theorem residual before solution inspection and compare cold / O1 / O1+O2 / O1+O2+O3 / accumulated-state arms under matched proof-search budget.
-5. Treat O4 and O5 as installed capital only within their verified scopes; do not upgrade to generic choice-free completeness or compounding without the corresponding separators.
+1. O15: Type-valued occurrence positions versus Prop-valued `Mem`, with a direct structural search arm under `[DecidableEq α]` that does not use `elems` or `finEquiv`.
+2. If O15 passes, test whether computational occurrence materialization plus computational support retraction is sufficient to build O10's `SupportQuotientLift`, avoiding the stronger `support ≃ Fin n` assumption from O13.
+3. Only after that separator, test an occurrence-indexed axiom calculus; keep its conservativity back to ordinary `derive'` as an independent gate.
+4. Separately run the frozen matched-budget natural acquisition experiment before upgrading any compounding claim.
