@@ -12,26 +12,28 @@ def ambientLeftProjectionCtx (κ : Type) : Ctx (Bool ⊕ κ) :=
   {ambientLeftProjectionLaw κ}
 
 /-- Derivability in the ambient left-projection theory still preserves the first leaf. No equality
-structure on κ is used. -/
-theorem derive'_ambientLeftProjection_first_eq {κ β : Type} {x y : FreeMagma β}
-    (d : ambientLeftProjectionCtx κ ⊢' x ≃ y) : x.first = y.first := by
-  induction d with
-  | @SubstAx E h σ =>
+structure on κ is used. Dependent recursion keeps the indexed derivation endpoints explicit. -/
+def derive'_ambientLeftProjection_first_eq {κ β : Type} :
+    {x y : FreeMagma β} →
+      (ambientLeftProjectionCtx κ ⊢' x ≃ y) → x.first = y.first
+  | _, _, .SubstAx (E := E) h σ => by
       have hE : E = ambientLeftProjectionLaw κ := by
         simpa [ambientLeftProjectionCtx] using h
       subst E
       rfl
-  | Ref => rfl
-  | Sym d ih => exact ih.symm
-  | Trans d₁ d₂ ih₁ ih₂ => exact ih₁.trans ih₂
-  | Cong d₁ d₂ ih₁ ih₂ => exact ih₁
+  | _, _, .Ref => rfl
+  | _, _, .Sym d => (derive'_ambientLeftProjection_first_eq d).symm
+  | _, _, .Trans d₁ d₂ =>
+      (derive'_ambientLeftProjection_first_eq d₁).trans
+        (derive'_ambientLeftProjection_first_eq d₂)
+  | _, _, .Cong d₁ d₂ => derive'_ambientLeftProjection_first_eq d₁
 
-/-- Every term reduces derivably to the leaf containing its first variable. -/
-theorem derive'_ambientLeftProjection_reduce {κ β : Type} (t : FreeMagma β) :
-    ambientLeftProjectionCtx κ ⊢' t ≃ Lf t.first := by
-  induction t with
-  | Leaf a => exact derive'.Ref
-  | Fork l r ihl ihr =>
+/-- Every term reduces derivably to the leaf containing its first variable. This is Type-valued
+proof data, constructed directly by syntax recursion. -/
+def derive'_ambientLeftProjection_reduce {κ β : Type} :
+    (t : FreeMagma β) → ambientLeftProjectionCtx κ ⊢' t ≃ Lf t.first
+  | .Leaf a => derive'.Ref
+  | .Fork l r => by
       let σ : Bool ⊕ κ → FreeMagma β := fun x =>
         match x with
         | Sum.inl false => l
@@ -42,7 +44,7 @@ theorem derive'_ambientLeftProjection_reduce {κ β : Type} (t : FreeMagma β) :
       have hax0 := derive'.SubstAx hmem σ
       have hax : ambientLeftProjectionCtx κ ⊢' (l ⋆ r) ≃ l := by
         simpa [ambientLeftProjectionLaw, σ, FreeMagma.evalInMagma] using hax0
-      simpa [FreeMagma.first] using derive'.Trans hax ihl
+      exact derive'.Trans hax (derive'_ambientLeftProjection_reduce l)
 
 /-- Canonical representative for the ambient theory's quotient. -/
 def FreeMagmaWithLaws.unembedAmbientLeftProjection {κ β : Type} :
