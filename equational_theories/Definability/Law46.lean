@@ -1,5 +1,6 @@
 import Batteries.Data.List.Basic
 import equational_theories.Definability.Basic
+import equational_theories.Definability.FreeMagmaTerm
 import equational_theories.FreeMagmaEvalCongr
 import equational_theories.Definability.Simple
 import equational_theories.Equations.All
@@ -37,12 +38,9 @@ theorem Equation46_termDefinableFrom_equalShape {L : NatMagmaLaw}
         = @Term.realize _ _ M.FOStructure _ (fun _ ↦ z) L.lhs.toTerm
     rw [FreeMagma.toTerm_realize, FreeMagma.toTerm_realize]
     exact hconst x z
-  · use (MagmaLanguage.lhomWithConstants _).onTerm (L.lhs.toTerm.subst fun _ ↦ var 0)
-    funext v
-    letI := M.FOStructure
-    show @Term.realize _ _ M.FOStructure _ (fun _ ↦ v 0) L.lhs.toTerm = _
-    rw [LHom.realize_onTerm, Term.realize_subst]
-    rfl
+  · let t : FreeMagma (Fin 2) := FreeMagma.fmapHom (fun _ ↦ (0 : Fin 2)) L.lhs
+    simpa [Magma.FinArityOp, FreeMagma.toTerm_realize, t, FreeMagma.evalInMagma_fmapHom] using
+      (FreeMagma.eval_termDefinable (G := G) t)
 
 /-- The constant law 46 `x ◇ y = z ◇ w` is TermDefinable from Equation 40 `x ◇ x = y ◇ y`. -/
 theorem Equation46_termDefinableFrom_Equation40 : Law46.TermDefinableFrom Law40 :=
