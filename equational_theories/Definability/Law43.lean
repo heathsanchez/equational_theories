@@ -1,5 +1,6 @@
 import Batteries.Data.List.Basic
 import equational_theories.Definability.Basic
+import equational_theories.Definability.FreeMagmaTerm
 import equational_theories.FreeMagmaEvalCongr
 import equational_theories.Definability.Simple
 import equational_theories.Equations.All
@@ -34,19 +35,10 @@ theorem Equation43_termDefinableFrom_swapped_args {L : NatMagmaLaw}
         have ha01 := hL2args a haList
         simp at ha01
         rcases ha01 with rfl | rfl <;> simp [FreeMagma.evalInMagma]
-  · let _ := M.FOStructure
-    exact ⟨
-      (MagmaLanguage.lhomWithConstants (∅ : Set G)).onTerm
-        (L.lhs.toTerm.subst fun n ↦
-          if n = 0 then FirstOrder.Language.Term.var 0 else FirstOrder.Language.Term.var 1),
-      by
-        funext v
-        simp [Term.realize_subst, FreeMagma.toTerm_realize]
-        apply FreeMagma.evalInMagma_congr
-        intro a ha
-        by_cases ha0 : a = 0
-        · simp [ha0]
-        · simp [ha0]⟩
+  · let σ : ℕ → Fin 2 := fun n ↦ if n = 0 then 0 else 1
+    let t : FreeMagma (Fin 2) := FreeMagma.fmapHom σ L.lhs
+    simpa [Magma.FinArityOp, t, σ, FreeMagma.evalInMagma_fmapHom, Function.comp_def] using
+      (FreeMagma.eval_termDefinable (G := G) t)
 
 /-- The commutative law 43 `x ◇ y = y ◇ x` is TermDefinable from 40 `x ◇ x = y ◇ y`. -/
 theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=
