@@ -3,7 +3,7 @@ name: Rigorous Lean Flywheel
 on:
   push:
     branches:
-      - agent/rigorous-lean-capital-flywheel-o12
+      - agent/rigorous-lean-capital-flywheel-o14
   workflow_dispatch:
 
 concurrency:
@@ -29,27 +29,23 @@ jobs:
             if [ "$i" = 3 ]; then exit 1; fi
             sleep 5
           done
-      - name: Build O12 dependency cone
+      - name: Build O14 dependency cone
         run: |
-          lake build equational_theories.SupportLocalConservativity
+          lake build equational_theories.SupportLocalExistentialConservativity
       - name: Axiom audit
         run: |
           set -o pipefail
           cat > /tmp/AxiomAudit.lean <<'EOF'
-          import equational_theories.SupportLocalConservativity
-          #print axioms SupportRetractionData.toSupportRetract
-          #print axioms totalizeSupportAssignment_of_data_agree
-          #print axioms derive'_of_deriveSupport'_retractionData
-          #print axioms supportRetractionData_of_decidableEq
-          #print axioms derive'_of_deriveSupport'_via_retractionData_decidable
-          #print axioms totalization_merely_exists_of_retract
+          import equational_theories.SupportLocalExistentialConservativity
+          #print axioms nonempty_derive'_of_deriveSupport'_retractable
+          #print axioms nonempty_deriveSupport'_iff_nonempty_derive'_of_retractable
           EOF
           lake env lean /tmp/AxiomAudit.lean | tee /tmp/axioms.txt
           if grep -q 'unknownIdentifier\|sorryAx' /tmp/axioms.txt; then
-            echo 'Invalid O12 axiom audit or sorry dependency.'
+            echo 'Invalid O14 axiom audit or sorry dependency.'
             exit 1
           fi
-          if grep -E "(toSupportRetract|totalizeSupportAssignment_of_data_agree|derive'_of_deriveSupport'_retractionData|supportRetractionData_of_decidableEq|derive'_of_deriveSupport'_via_retractionData_decidable|totalization_merely_exists_of_retract).*Classical.choice" /tmp/axioms.txt; then
-            echo 'Classical.choice unexpectedly appears in O12 targets.'
+          if grep -E "(nonempty_derive'_of_deriveSupport'_retractable|nonempty_deriveSupport'_iff_nonempty_derive'_of_retractable).*Classical.choice" /tmp/axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O14 targets.'
             exit 1
           fi
