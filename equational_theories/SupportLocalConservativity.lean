@@ -30,8 +30,8 @@ theorem totalizeSupportAssignment_of_data_agree {α β : Type} {E : MagmaLaw α}
     (a : α) (ha : E.Mem a) :
     σ a ha = totalizeSupportAssignment_of_data d σ a := by
   have hra : d.retract a = ⟨a, ha⟩ := d.retract_on ⟨a, ha⟩
-  simp only [totalizeSupportAssignment_of_data]
-  rw [hra]
+  simpa only [totalizeSupportAssignment_of_data] using
+    (congrArg (fun s : {x // E.Mem x} => σ s.1 s.2) hra).symm
 
 /-- The support-local calculus is conservative over the existing uniform-substitution calculus
 whenever every axiom in the context carries computational support-retraction data. No
@@ -86,5 +86,5 @@ theorem totalization_merely_exists_of_retract {α β : Type} {E : MagmaLaw α}
   refine ⟨τ, ?_⟩
   intro a ha
   have hra : r a = ⟨a, ha⟩ := hr ⟨a, ha⟩
-  simp only [τ]
-  rw [hra]
+  simpa only [τ] using
+    (congrArg (fun s : {x // E.Mem x} => σ s.1 s.2) hra).symm
