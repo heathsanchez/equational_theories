@@ -14,10 +14,7 @@ def TypeChoiceSchema : Prop :=
   ∀ (ι : Type) (P : ι → Type), (∀ i, Nonempty (P i)) → Nonempty (∀ i, P i)
 
 /-- If every surjection admits arbitrary function-space lifting, then the Type-valued choice schema
-follows. The proof uses the dependent projection `Sigma P → ι` as the surjection.
-
-Crucially, this implication itself is constructive: no `Classical.choice` is used to derive the
-choice schema from the assumed function-space lifting principle. -/
+follows. The proof uses the dependent projection `Sigma P → ι` as the surjection. -/
 theorem typeChoiceSchema_of_surjective_familyLift
     (hLift : ∀ {A B : Type} (q : A → B), Function.Surjective q → FamilyLift q) :
     TypeChoiceSchema := by
@@ -32,6 +29,28 @@ theorem typeChoiceSchema_of_surjective_familyLift
   have hi : i = (g i).1 := hg i
   exact hi.symm ▸ (g i).2
 
+/-- Conversely, the Type-valued choice schema lifts every surjection through every function space:
+choose one preimage in the fiber over each value `f i`. -/
+theorem surjective_familyLift_of_typeChoiceSchema
+    (hChoice : TypeChoiceSchema) :
+    ∀ {A B : Type} (q : A → B), Function.Surjective q → FamilyLift q := by
+  intro A B q hq ι f
+  let P : ι → Type := fun i ↦ {a : A // f i = q a}
+  have hP : ∀ i, Nonempty (P i) := by
+    intro i
+    obtain ⟨a, ha⟩ := hq (f i)
+    exact ⟨⟨a, ha.symm⟩⟩
+  obtain ⟨g⟩ := hChoice ι P hP
+  exact ⟨fun i ↦ (g i).1, fun i ↦ (g i).2⟩
+
+/-- Arbitrary function-space lifting of surjections is propositionally equivalent to the
+Type-valued choice schema. Both directions are proved without assuming choice: choice appears only
+as the proposition being characterized. -/
+theorem surjectiveFamilyLift_iff_typeChoiceSchema :
+    (∀ {A B : Type} (q : A → B), Function.Surjective q → FamilyLift q) ↔ TypeChoiceSchema := by
+  exact ⟨typeChoiceSchema_of_surjective_familyLift,
+    surjective_familyLift_of_typeChoiceSchema⟩
+
 /-- The quotient embedding used by completeness is pointwise surjective without choice: each
 individual quotient value has a representative. -/
 theorem embed_surjective {α β : Type} (Γ : Ctx α) :
@@ -40,9 +59,8 @@ theorem embed_surjective {α β : Type} (Γ : Ctx α) :
   obtain ⟨r, hr⟩ := Quotient.exists_rep x
   exact ⟨r, hr.symm⟩
 
-/-- `PhiAsSubst_aux` is exactly a function-space lift of the quotient embedding at one chosen
-index type. This theorem exposes the representation boundary without changing the completeness
-statement. -/
+/-- `PhiAsSubst_aux` is exactly the one-index-type function-space lifting instance needed for the
+quotient embedding. The baseline implementation obtains it using `Classical.axiomOfChoice`. -/
 theorem phiAsSubst_aux_is_familyLift_instance {α β γ : Type}
     (Γ : Ctx α) (φ : β → FreeMagmaWithLaws γ Γ) :
     ∃ σ : β → FreeMagma γ, ∀ x, φ x = embed Γ (σ x) :=
