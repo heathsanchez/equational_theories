@@ -13,7 +13,7 @@ theorem PhiAsSubst_onLawSupport {α β γ} [DecidableEq β]
     ∃ σ : β → FreeMagma γ,
       (∀ x, E.lhs.Mem x → φ x = embed Γ (σ x)) ∧
       (∀ x, E.rhs.Mem x → φ x = embed Γ (σ x)) := by
-  obtain ⟨d, hd⟩ := Quotient.exists_rep (φ E.lhs.first)
+  obtain ⟨d, _⟩ := Quotient.exists_rep (φ E.lhs.first)
   let xs := E.lhs.elems.val ++ E.rhs.elems.val
   have liftList : ∀ ys : List β,
       ∃ σ : β → FreeMagma γ, ∀ x, x ∈ ys → φ x = embed Γ (σ x) := by
@@ -37,10 +37,12 @@ theorem PhiAsSubst_onLawSupport {α β γ} [DecidableEq β]
   refine ⟨σ, ?_, ?_⟩
   · intro x hx
     apply hσ x
-    exact List.mem_append_left _ ((E.lhs.elems.2.2 x).2 hx)
+    have hmem : x ∈ E.lhs.elems.val := (E.lhs.elems.2.2 x).2 hx
+    simp [xs, hmem]
   · intro x hx
     apply hσ x
-    exact List.mem_append_right _ ((E.rhs.elems.2.2 x).2 hx)
+    have hmem : x ∈ E.rhs.elems.val := (E.rhs.elems.2.2 x).2 hx
+    simp [xs, hmem]
 
 /-- Choice-free model construction for contexts whose variable type has decidable equality.
 Instead of lifting an entire quotient-valued valuation, lift only the finite support of the current
