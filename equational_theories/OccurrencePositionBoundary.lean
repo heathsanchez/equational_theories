@@ -38,6 +38,48 @@ theorem mem_has_occurrence_position {α : Type} (a : α) :
       · obtain ⟨⟨p, hp⟩⟩ := mem_has_occurrence_position a r hr
         exact ⟨⟨Sum.inr p, hp⟩⟩
 
+/-- Direct structural decidability of `FreeMagma.Mem` from equality decisions. This deliberately
+avoids `elems`, deduplication, and `finEquiv`. -/
+def memDecidable {α : Type} [DecidableEq α] (a : α) :
+    (t : FreeMagma α) → Decidable (Mem a t)
+  | Lf b => inferInstance
+  | l ⋆ r =>
+      match memDecidable a l with
+      | isTrue hl => isTrue (.inl hl)
+      | isFalse hnl =>
+          match memDecidable a r with
+          | isTrue hr => isTrue (.inr hr)
+          | isFalse hnr => isFalse (by
+              intro h
+              rcases h with hl | hr
+              · exact hnl hl
+              · exact hnr hr)
+
+/-- Search the finite syntax for an actual matching position. The membership proof is used only to
+rule out the impossible no-match branch; the left/right computational branch is chosen by the
+structural decision procedure above. -/
+def memPosition_of_decidableEq {α : Type} [DecidableEq α] (a : α) :
+    (t : FreeMagma α) → Mem a t → OccurrencePos t
+  | Lf _, _ => PUnit.unit
+  | l ⋆ r, h =>
+      match memDecidable a l with
+      | isTrue hl => Sum.inl (memPosition_of_decidableEq a l hl)
+      | isFalse hnl => Sum.inr (memPosition_of_decidableEq a r (Or.resolve_left h hnl))
+
+/-- The structural search really lands on a position carrying the requested variable label. -/
+theorem occurrenceLabel_memPosition_of_decidableEq {α : Type} [DecidableEq α] (a : α) :
+    ∀ (t : FreeMagma α) (h : Mem a t),
+      occurrenceLabel t (memPosition_of_decidableEq a t h) = a
+  | Lf b, h => h.symm
+  | l ⋆ r, h => by
+      unfold memPosition_of_decidableEq
+      cases hdec : memDecidable a l with
+      | isTrue hl =>
+          simpa [hdec, occurrenceLabel] using occurrenceLabel_memPosition_of_decidableEq a l hl
+      | isFalse hnl =>
+          have hr : Mem a r := Or.resolve_left h hnl
+          simpa [hdec, occurrenceLabel] using occurrenceLabel_memPosition_of_decidableEq a r hr
+
 /-- Type-valued materialization of every `Mem` witness into an actual occurrence position. This is
 strictly stronger data than `mem_has_occurrence_position`, whose conclusion is only `Nonempty`. -/
 structure MemPositionData {α : Type} (t : FreeMagma α) where
@@ -45,34 +87,11 @@ structure MemPositionData {α : Type} (t : FreeMagma α) where
   label_locate : ∀ a h, occurrenceLabel t (locate a h) = a
 
 /-- Decidable equality supplies computational materialization by searching the finite term by label,
-without eliminating the proposition-level `Or` witness into `Type`. -/
-def memPositionData_of_decidableEq {α : Type} [DecidableEq α] :
-    (t : FreeMagma α) → MemPositionData t
-  | Lf b =>
-      { locate := fun _ _ => PUnit.unit
-        label_locate := by
-          intro a h
-          exact h.symm }
-  | l ⋆ r => by
-      let dl := memPositionData_of_decidableEq l
-      let dr := memPositionData_of_decidableEq r
-      refine {
-        locate := fun a h =>
-          if hl : Mem a l then Sum.inl (dl.locate a hl)
-          else Sum.inr (dr.locate a (by
-            rcases h with hl' | hr
-            · exact False.elim (hl hl')
-            · exact hr))
-        label_locate := ?_ }
-      intro a h
-      split
-      next hl => exact dl.label_locate a hl
-      next hnl =>
-        have hr : Mem a r := by
-          rcases h with hl | hr
-          · exact False.elim (hnl hl)
-          · exact hr
-        exact dr.label_locate a hr
+without `elems`, `finEquiv`, or proposition-to-Type elimination of the membership witness. -/
+def memPositionData_of_decidableEq {α : Type} [DecidableEq α]
+    (t : FreeMagma α) : MemPositionData t where
+  locate := fun a h => memPosition_of_decidableEq a t h
+  label_locate := fun a h => occurrenceLabel_memPosition_of_decidableEq a t h
 
 /-- A computational position always gives back a proposition-level membership witness for its
 label; no equality decision is involved. -/
