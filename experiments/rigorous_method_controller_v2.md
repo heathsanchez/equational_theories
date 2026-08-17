@@ -210,3 +210,44 @@ Review this controller again after either:
 - the first matched-budget evidence of developmental dependence;
 - a source-distinct failure showing the normalizer/compiler abstraction is overgeneralized;
 - or a major residual family that cannot be cleanly split by the present ontology.
+
+## 12. Review 1 — O30/O31/O32 post-v2 evidence
+
+This review is appended rather than rewriting sections 0–11.
+
+### What worked
+- O29 compressed several hand-built quotient-section constructions into a reusable normalizer compiler.
+- O30 transferred that compiler to associativity, a non-collapsing quotient preserving the full leaf sequence rather than collapsing to one endpoint.
+- O31 transferred the associativity route into an ambient variable type containing arbitrary `κ`, showing the compiled normalizer route survives source variables with no equality assumption on the ambient remainder.
+- O32 tested idempotence, where normalization itself needs a non-structural comparison step. Its first two verifier failures were progressively split into local proof/interface residuals rather than triggering a representation broadening. The same conjectured normalizer was retained until the actual semantic gate was reached.
+- O32 ultimately kernel-built and passed its axiom audit under explicit `[DecidableEq β]`; all audited O32 targets depend only on `propext`.
+
+### Controller change earned
+Before inventing a new proof/search route for a sharpened residual, add an explicit **REUSE CHECK**:
+
+`SHARPEN → REUSE CHECK → [reuse/instantiate admitted pattern if matched] → only then invent/broaden`.
+
+The O32 repair reused two previously earned patterns:
+1. dependent/equality transport rather than changing the theorem;
+2. semantic separating-model invariance rather than recursively eliminating an indexed derivation proof.
+
+This reduced search and preserved the frozen hypothesis across two failures.
+
+### Updated inner-loop fragment
+
+`FAIL → SPLIT → SHARPEN → REUSE CHECK → SEPARATOR/REPAIR → VERIFY`.
+
+The reuse check asks:
+- Is this residual isomorphic in causal role to an admitted earlier residual?
+- Is there already a verified proof architecture, representation, normalizer, constructor, or semantic separator that can be instantiated here?
+- Can reuse be attempted without broadening scope or smuggling in stronger assumptions?
+
+Reuse remains subject to applicability boundaries; superficial similarity is not enough.
+
+### New live residual after O32
+
+O32 establishes sufficiency of computational equality for the obvious leaf-preserving idempotence normalizer. It does not establish necessity.
+
+The next separator therefore reverses the implication: determine whether a natural computational idempotence-normalizer interface itself exposes equality-discrimination power, while preserving the Prop/Type distinctions learned earlier.
+
+This is a direct example of the v2 rule: after a successful intervention, reverse-test whether the added resource was necessary or merely sufficient before broadening again.
