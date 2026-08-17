@@ -44,48 +44,53 @@ def derive'_idempotence_reduce {β : Type} [DecidableEq β] :
         simpa [idempotenceNormalize, nl, nr, h] using derive'.Trans dc hs
       · simpa [idempotenceNormalize, nl, nr, h] using dc
 
-/-- The algebra whose multiplication is exactly the normalization combine-step. This is a
-separating model for the proposed normal form: its operation contracts equal normalized children
-and otherwise keeps the fork. -/
+/-- The algebra whose multiplication is exactly the normalization combine-step. -/
 def idempotenceNormalMagma (β : Type) [DecidableEq β] : Magma (FreeMagma β) where
   op a b := if h : a = b then a else a ⋆ b
 
-/-- Evaluating a term in the normal-form algebra under leaf injection computes the proposed
-recursive normalizer. -/
+/-- Evaluating in the normal-form algebra under leaf injection computes the recursive normalizer. -/
 theorem eval_idempotenceNormalMagma_eq_normalize {β : Type} [DecidableEq β]
     (t : FreeMagma β) :
-    @FreeMagma.evalInMagma β (FreeMagma β) (idempotenceNormalMagma β) t Lf =
+    @FreeMagma.evalInMagma β (FreeMagma β) (idempotenceNormalMagma β) Lf t =
       idempotenceNormalize t := by
   induction t with
   | Leaf a => rfl
   | Fork l r ihl ihr =>
-      change (if h : (l ⬝ Lf) = (r ⬝ Lf) then (l ⬝ Lf) else (l ⬝ Lf) ⋆ (r ⬝ Lf)) = _
+      change (if h :
+        @FreeMagma.evalInMagma β (FreeMagma β) (idempotenceNormalMagma β) Lf l =
+        @FreeMagma.evalInMagma β (FreeMagma β) (idempotenceNormalMagma β) Lf r
+        then @FreeMagma.evalInMagma β (FreeMagma β) (idempotenceNormalMagma β) Lf l
+        else @FreeMagma.evalInMagma β (FreeMagma β) (idempotenceNormalMagma β) Lf l ⋆
+          @FreeMagma.evalInMagma β (FreeMagma β) (idempotenceNormalMagma β) Lf r) = _
       rw [ihl, ihr]
       rfl
 
 /-- The normal-form algebra satisfies idempotence. -/
 theorem idempotenceNormalMagma_isModel {β : Type} [DecidableEq β] :
+    letI : Magma (FreeMagma β) := idempotenceNormalMagma β
     (FreeMagma β) ⊧ idempotenceCtx := by
   letI : Magma (FreeMagma β) := idempotenceNormalMagma β
   intro E hE φ
   have hEq : E = idempotenceLaw := by
     simpa [idempotenceCtx] using hE
   subst E
+  change φ PUnit.unit ◇ φ PUnit.unit = φ PUnit.unit
   change (if h : φ PUnit.unit = φ PUnit.unit then φ PUnit.unit else
     φ PUnit.unit ⋆ φ PUnit.unit) = φ PUnit.unit
   simp
 
-/-- Derivability under idempotence preserves the proposed normal form. Rather than recurse over
-indexed derivation proofs, use soundness in the normal-form algebra learned from O25/O30. -/
+/-- Derivability under idempotence preserves the proposed normal form, via soundness in the
+normal-form algebra. -/
 theorem idempotenceNormalize_respects {β : Type} [DecidableEq β] {x y : FreeMagma β}
     (d : idempotenceCtx ⊢' x ≃ y) :
     idempotenceNormalize x = idempotenceNormalize y := by
   letI : Magma (FreeMagma β) := idempotenceNormalMagma β
-  have hxy : x ⬝ Lf = y ⬝ Lf :=
-    (Soundness'_u d idempotenceNormalMagma_isModel) Lf
+  have hmodel : FreeMagma β ⊧ idempotenceCtx := idempotenceNormalMagma_isModel
+  have hxy0 := (Soundness'_u d hmodel) Lf
+  change x ⬝ Lf = y ⬝ Lf at hxy0
   calc
     idempotenceNormalize x = x ⬝ Lf := (eval_idempotenceNormalMagma_eq_normalize x).symm
-    _ = y ⬝ Lf := hxy
+    _ = y ⬝ Lf := hxy0
     _ = idempotenceNormalize y := eval_idempotenceNormalMagma_eq_normalize y
 
 /-- Scoped O29 normalizer data. This deliberately retains `[DecidableEq β]`; O32 tests whether
