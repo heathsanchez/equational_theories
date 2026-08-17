@@ -1,0 +1,40 @@
+name: Rigorous Lean O48 Setoid Ordinary Bridge
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o48-bridge
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O48 boundary
+        run: lake build equational_theories.SetoidOrdinaryBridge
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O48Audit.lean <<'EOF'
+          import equational_theories.SetoidOrdinaryBridge
+          #print axioms O48.eval_qembed
+          #print axioms O48.quotient_isModel_of_sourceLift
+          #print axioms O48.ordinary_to_setoid_of_sourceLift
+          EOF
+          lake env lean /tmp/O48Audit.lean | tee /tmp/o48_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx\|Classical.choice' /tmp/o48_axioms.txt; then exit 1; fi
