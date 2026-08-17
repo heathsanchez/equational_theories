@@ -1,0 +1,16 @@
+[
+  {
+    "id": "arklib_pr686_vflatten_eq_vappend_last",
+    "repository": "Verified-zkEVM/ArkLib",
+    "base_sha": "646fb08582d0254b6eedd238dcb2ba9a13153fcb",
+    "path": "ArkLib/Data/Fin/Sigma.lean",
+    "targets": ["Fin.vflatten_eq_vappend_last"],
+    "budget": {
+      "model_calls": 6,
+      "semantic_lean_attempts": 6,
+      "reasoning_effort": "high",
+      "accepted_patch_lookup": "forbidden until all arms freeze outputs"
+    },
+    "context": "namespace Fin\n\nvariable {α : Sort*}\n\ndef vflatten {m : ℕ} {n : Fin m → ℕ} (v : (i : Fin m) → Fin (n i) → α) :\n    Fin (vsum n) → α := dflatten v\n\n@[simp] theorem vflatten_succ {m : ℕ} {n : Fin (m + 1) → ℕ}\n    {v : (i : Fin (m + 1)) → Fin (n i) → α} :\n    vflatten v = vappend (v 0) (vflatten (fun i => v i.succ)) := rfl\n\n@[simp] theorem vflatten_one {n : Fin 1 → ℕ}\n    {v : (i : Fin 1) → Fin (n i) → α} : vflatten v = v 0 := rfl\n\n@[simp] theorem vflatten_two_eq_append {n : Fin 2 → ℕ}\n    {v : (i : Fin 2) → Fin (n i) → α} :\n    vflatten v = vappend (v 0) (v 1) := rfl\n\ntheorem vflatten_eq_vappend_last {m : ℕ} {n : Fin (m + 1) → ℕ}\n    {v : (i : Fin (m + 1)) → Fin (n i) → α} :\n    vflatten v =\n      vappend (vflatten (fun i => v i.castSucc)) (v (last _)) ∘ Fin.cast vsum_castSucc := by\n  induction m with\n  | zero => ext i; simp\n  | succ m ih =>\n    rw [vflatten_succ, ih, vflatten_succ]\n    sorry\n\nAvailable nearby lemmas include the definitions and simp theorems for dflatten/vflatten shown above, Fin.vappend, Fin.cast, and vsum_castSucc from the imported Fin utilities. Work only from the frozen pre-merge source; do not inspect PR #686's patch."
+  }
+]
