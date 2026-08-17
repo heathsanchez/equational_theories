@@ -7,8 +7,8 @@ open Law
 /-- O38 package: both sides of one source axiom have independently chosen occurrence-local
 representatives under the same quotient-valued valuation. No variable-indexed representative map
 is part of this data. -/
-structure LawOccurrencePackage {δ α β : Type} (Γ : Ctx δ)
-    (E : MagmaLaw α) (φ : α → FreeMagmaWithLaws β Γ) where
+structure LawOccurrencePackage {δ β : Type} (Γ : Ctx δ)
+    (E : MagmaLaw δ) (φ : δ → FreeMagmaWithLaws β Γ) where
   lhsRep : FreeMagma β
   rhsRep : FreeMagma β
   lhsLift : OccurrenceLift Γ φ E.lhs lhsRep
@@ -16,8 +16,8 @@ structure LawOccurrencePackage {δ α β : Type} (Γ : Ctx δ)
 
 /-- O6 constructs an occurrence package for every law and quotient-valued valuation, without
 `DecidableEq` and without choosing one representative per source variable. -/
-theorem lawOccurrencePackage_exists {δ α β : Type} (Γ : Ctx δ)
-    (E : MagmaLaw α) (φ : α → FreeMagmaWithLaws β Γ) :
+theorem lawOccurrencePackage_exists {δ β : Type} (Γ : Ctx δ)
+    (E : MagmaLaw δ) (φ : δ → FreeMagmaWithLaws β Γ) :
     ∃ p : LawOccurrencePackage Γ E φ, True := by
   obtain ⟨l, hl⟩ := occurrenceLift_exists Γ φ E.lhs
   obtain ⟨r, hr⟩ := occurrenceLift_exists Γ φ E.rhs
@@ -29,8 +29,8 @@ representative trees.
 
 Crucially this interface asks for neither a total substitution nor a support-indexed substitution.
 -/
-def OccurrenceAxiomCompiler {δ α : Type} (Γ : Ctx δ) (E : MagmaLaw α) : Prop :=
-  ∀ (hE : E ∈ Γ) (β : Type) (φ : α → FreeMagmaWithLaws β Γ)
+def OccurrenceAxiomCompiler {δ : Type} (Γ : Ctx δ) (E : MagmaLaw δ) : Prop :=
+  ∀ (hE : E ∈ Γ) (β : Type) (φ : δ → FreeMagmaWithLaws β Γ)
     (p : LawOccurrencePackage Γ E φ),
       Nonempty (Γ ⊢' p.lhsRep ≃ p.rhsRep)
 
@@ -66,8 +66,8 @@ theorem Completeness'_occurrenceCompilers {α β : Type}
 /-- Existing O10 support resources are sufficient to build the new compiler. This proves O38 is a
 strict refactor of the generic residual, not an unrelated new goal: any old resource route maps into
 it, while the converse is deliberately left open. -/
-theorem occurrenceAxiomCompiler_of_supportResources {δ α : Type}
-    (Γ : Ctx δ) (E : MagmaLaw α)
+theorem occurrenceAxiomCompiler_of_supportResources {δ : Type}
+    (Γ : Ctx δ) (E : MagmaLaw δ)
     (hret : SupportRetract E)
     (hlift : SupportQuotientLift Γ E) :
     OccurrenceAxiomCompiler Γ E := by
@@ -95,4 +95,5 @@ theorem occurrenceAxiomCompiler_of_supportResources {δ α : Type}
       _ = embed Γ p.rhsRep := occurrenceLift_eval_eq_embed p.rhsLift
   obtain ⟨dl'⟩ := dl
   obtain ⟨dr'⟩ := dr
-  exact ⟨derive'.Trans dl' (derive'.Trans (derive'.SubstAx hE τ) dr')⟩
+  have dax : Γ ⊢' (E.lhs ⬝ τ ≃ E.rhs ⬝ τ) := derive'.SubstAx hE τ
+  exact ⟨derive'.Trans dl' (derive'.Trans dax dr')⟩
