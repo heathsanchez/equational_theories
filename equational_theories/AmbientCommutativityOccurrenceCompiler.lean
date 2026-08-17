@@ -8,43 +8,52 @@ open Law
 law directly from occurrence-local representatives, without invoking `SupportRetract` or
 `SupportQuotientLift`.
 
-The proof deliberately exposes whether ordinary `derive'.SubstAx` still forces a total source
-substitution internally. -/
+The proof uses occurrence packages only through their verified evaluation interface. It deliberately
+exposes that ordinary `derive'.SubstAx` still consumes a total source substitution internally. -/
 theorem occurrenceAxiomCompiler_ambientCommutativity (κ : Type) :
     OccurrenceAxiomCompiler (ambientCommutativityCtx κ) (ambientCommutativityLaw κ) := by
   intro hE β φ p
-  rcases p with ⟨lhsRep, rhsRep, lhsLift, rhsLift⟩
-  cases lhsLift with
-  | fork hl0 hl1 =>
-    cases hl0 with
-    | leaf _ l0 h0L =>
-      cases hl1 with
-      | leaf _ l1 h1L =>
-        cases rhsLift with
-        | fork hr1 hr0 =>
-          cases hr1 with
-          | leaf _ r1 h1R =>
-            cases hr0 with
-            | leaf _ r0 h0R =>
-              have d0 : Nonempty (ambientCommutativityCtx κ ⊢' l0 ≃ r0) :=
-                occurrence_representatives_derivably_equal h0L h0R
-              have d1 : Nonempty (ambientCommutativityCtx κ ⊢' l1 ≃ r1) :=
-                occurrence_representatives_derivably_equal h1L h1R
-              obtain ⟨d0'⟩ := d0
-              obtain ⟨d1'⟩ := d1
-              let τ : Bool ⊕ κ → FreeMagma β := fun x =>
-                match x with
-                | Sum.inl false => l0
-                | Sum.inl true => l1
-                | Sum.inr _ => l0
-              have dax : ambientCommutativityCtx κ ⊢'
-                  (l0 ⋆ l1) ≃ (l1 ⋆ l0) := by
-                simpa [ambientCommutativityLaw, τ] using
-                  (derive'.SubstAx hE τ)
-              exact ⟨derive'.Trans dax (derive'.Cong d1' d0')⟩
+  obtain ⟨a, ha⟩ := Quotient.exists_rep (φ (Sum.inl false))
+  obtain ⟨b, hb⟩ := Quotient.exists_rep (φ (Sum.inl true))
+  have ha' : φ (Sum.inl false) = embed (ambientCommutativityCtx κ) a := ha.symm
+  have hb' : φ (Sum.inl true) = embed (ambientCommutativityCtx κ) b := hb.symm
+  have dl : Nonempty (ambientCommutativityCtx κ ⊢' p.lhsRep ≃ (a ⋆ b)) := by
+    apply FreeMagmaWithLaws.eq.mp
+    calc
+      embed (ambientCommutativityCtx κ) p.lhsRep =
+          (ambientCommutativityLaw κ).lhs ⬝ φ :=
+        (occurrenceLift_eval_eq_embed p.lhsLift).symm
+      _ = φ (Sum.inl false) ⋆ φ (Sum.inl true) := by
+        rfl
+      _ = embed (ambientCommutativityCtx κ) a ⋆
+          embed (ambientCommutativityCtx κ) b := by rw [ha', hb']
+      _ = embed (ambientCommutativityCtx κ) (a ⋆ b) :=
+        (embed_fork (ambientCommutativityCtx κ) a b).symm
+  have dr : Nonempty (ambientCommutativityCtx κ ⊢' (b ⋆ a) ≃ p.rhsRep) := by
+    apply FreeMagmaWithLaws.eq.mp
+    calc
+      embed (ambientCommutativityCtx κ) (b ⋆ a) =
+          embed (ambientCommutativityCtx κ) b ⋆
+            embed (ambientCommutativityCtx κ) a :=
+        embed_fork (ambientCommutativityCtx κ) b a
+      _ = φ (Sum.inl true) ⋆ φ (Sum.inl false) := by rw [hb', ha']
+      _ = (ambientCommutativityLaw κ).rhs ⬝ φ := by
+        rfl
+      _ = embed (ambientCommutativityCtx κ) p.rhsRep :=
+        occurrenceLift_eval_eq_embed p.rhsLift
+  let τ : Bool ⊕ κ → FreeMagma β := fun x =>
+    match x with
+    | Sum.inl false => a
+    | Sum.inl true => b
+    | Sum.inr _ => a
+  have dax : ambientCommutativityCtx κ ⊢' (a ⋆ b) ≃ (b ⋆ a) := by
+    simpa [ambientCommutativityLaw, τ] using (derive'.SubstAx hE τ)
+  obtain ⟨dl'⟩ := dl
+  obtain ⟨dr'⟩ := dr
+  exact ⟨derive'.Trans dl' (derive'.Trans dax dr')⟩
 
-/-- The O38 completeness route can therefore be instantiated for the ambient commutativity context
-using the direct occurrence compiler, with no support-resource premise in the final theorem. -/
+/-- Instantiate O38 completeness using the direct occurrence compiler, with no support-resource
+premise in the final theorem. -/
 theorem Completeness'_ambientCommutativity_occurrenceRoute {κ β : Type} {E : MagmaLaw β}
     (h : ambientCommutativityCtx κ ⊧ E) :
     Nonempty (ambientCommutativityCtx κ ⊢' E) := by
