@@ -101,7 +101,7 @@ jobs:
           set +e
           START=$(date +%s)
           copilot \
-            --model=gpt-5-mini \
+            --model=auto \
             --mode=autopilot \
             --max-autopilot-continues=5 \
             --max-ai-credits=30 \
@@ -150,12 +150,32 @@ jobs:
           agent_rc=int(pathlib.Path(f'copilot-{arm}.exitcode').read_text().strip())
           forbidden=any(tok in region for tok in ['sorry','admit','unsafeCast','native_decide'])
           solved=(rc==0 and not forbidden)
+          resolved=[]
+          model_calls=[]
+          tool_calls=0
+          for line in pathlib.Path(f'copilot-{arm}.jsonl').read_text(errors='replace').splitlines():
+            try:
+              obj=json.loads(line)
+            except Exception:
+              continue
+            typ=obj.get('type')
+            data=obj.get('data') or {}
+            if typ=='session.auto_mode_resolved' and data.get('chosenModel'):
+              resolved.append(data['chosenModel'])
+            if typ=='model.call_start' and data.get('model'):
+              model_calls.append(data['model'])
+            if typ in ('tool.execution_start','assistant.tool_request','tool.call_start'):
+              tool_calls += 1
           summary={
             'arm': arm,
             'agent_exit': agent_rc,
             'lean_exit': rc,
             'target_forbidden_token': forbidden,
             'solved': solved,
+            'resolved_models': sorted(set(resolved)),
+            'model_call_models': sorted(set(model_calls)),
+            'model_calls': len(model_calls),
+            'tool_calls_observed': tool_calls,
             'agent_seconds': int(pathlib.Path(f'copilot-{arm}.seconds').read_text()),
             'verify_seconds': int(pathlib.Path(f'lean-{arm}.seconds').read_text()),
             'patch_lines': len(pathlib.Path(f'{arm}.patch').read_text().splitlines()),
