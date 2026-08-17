@@ -2,6 +2,8 @@ import equational_theories.ManuallyProved.Equation1729.SmallMagma
 
 namespace Eq1729
 
+open AddToMagma
+
 /-- Benchmark reconstruction of the pre-PR #1162 `reduce_to_new_axioms` proof.
 The merged patch is not consulted. -/
 theorem reduce_to_new_axioms_capital
