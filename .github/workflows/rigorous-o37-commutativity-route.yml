@@ -1,0 +1,52 @@
+name: Rigorous Lean O37 Commutativity Route Select
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o37
+  workflow_dispatch:
+
+concurrency:
+  group: rigorous-o37-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O37 production route
+        run: |
+          lake build equational_theories.AmbientCommutativityResourceCompleteness
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O37Audit.lean <<'EOF'
+          import equational_theories.AmbientCommutativityResourceCompleteness
+          #print axioms supportRetract_ambientCommutativity
+          #print axioms supportQuotientLift_ambientCommutativity
+          #print axioms contextSupportResources_ambientCommutativity
+          #print axioms Completeness'_ambientCommutativity_resourceRoute
+          EOF
+          lake env lean /tmp/O37Audit.lean | tee /tmp/o37_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx' /tmp/o37_axioms.txt; then
+            exit 1
+          fi
+          if grep -E "(supportRetract_ambientCommutativity|supportQuotientLift_ambientCommutativity|contextSupportResources_ambientCommutativity|Completeness'_ambientCommutativity_resourceRoute).*Classical.choice" /tmp/o37_axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O37.'
+            exit 1
+          fi
