@@ -1,0 +1,177 @@
+name: Verified Compounding Causal v1
+
+on:
+  push:
+    branches:
+      - bench/verified-compounding-causal-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  copilot-requests: write
+
+jobs:
+  arm:
+    name: ${{ matrix.arm }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [cold, memory, capital]
+
+    steps:
+      - name: Checkout frozen unseen task
+        uses: actions/checkout@v6
+        with:
+          repository: Verified-zkEVM/ArkLib
+          ref: 646fb08582d0254b6eedd238dcb2ba9a13153fcb
+          fetch-depth: 1
+
+      - name: Sever upstream lookup path
+        run: git remote remove origin
+
+      - name: Install Lean toolchain manager
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Validate frozen baseline environment
+        run: |
+          source "$HOME/.elan/env"
+          lake build ArkLib.Data.Fin.Sigma
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Freeze arm prompt
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          cat > /tmp/base_prompt.txt <<'EOF'
+          You are in a frozen historical Lean repository checkout. Solve exactly one existing proof hole:
+          ArkLib/Data/Fin/Sigma.lean theorem Fin.vflatten_eq_vappend_last.
+
+          Hard evidence rules:
+          - Do not use the internet, GitHub, PRs, historical patches, or accepted solutions.
+          - Do not weaken/change the theorem statement.
+          - Do not add axioms, sorry, admit, unsafeCast, or native_decide.
+          - Stay on the frozen checkout. You may inspect nearby source/library code already present locally.
+          - Edit only ArkLib/Data/Fin/Sigma.lean.
+          - Use Lean/lake as the verifier. Keep iterating within the fixed budget until the target theorem builds or you reach a named obstruction.
+          - At the end, leave your best patch in the working tree and report whether Lean verified it.
+          EOF
+
+          cat > /tmp/memory.txt <<'EOF'
+
+          VERIFIED PRIOR RESULTS MEMORY
+          Previous verified work found reusable patterns involving: support-sensitive evaluation; finite-support versus total-interface distinctions; Prop-versus-Type proof/data boundaries; canonical normalizers; reuse of nearby library lemmas; separating infrastructure failures from semantic residuals; and several successful Lean proof repairs where apparently broad problems collapsed to a small local algebraic/transport obligation. These are prior outcomes/examples only; no explicit control policy is supplied.
+          EOF
+
+          cat > /tmp/controller.txt <<'EOF'
+
+          RIGOROUS CONTROLLER CAPITAL
+          1. Freeze task/evidence boundary before search.
+          2. Classify verifier failures as infrastructure or semantic; do not learn semantics from infrastructure failures.
+          3. Split a semantic residual into rival explanations before broadening.
+          4. Run the smallest separator and prune falsified branches.
+          5. REUSE CHECK: prefer existing verified/library mechanisms before inventing machinery.
+          6. ROUTE SELECT: compare admissible proof routes and resource costs before deepening one.
+          7. INVARIANT AUDIT before replacing a global interface.
+          8. Treat proof-to-data / Prop-to-Type uniformization as a named residual rather than generic difficulty.
+          9. Localize data requirements to the smallest constructor/interface imposing them.
+          10. Preserve negative results and exact scope; do not convert heuristics to law without verification.
+          11. Periodically zoom out over verified local results and compress repeated structure only after transfer/ablation earns it.
+          12. Lean/kernel verdicts are hard evidence; prose plausibility is not.
+          EOF
+
+          cp /tmp/base_prompt.txt /tmp/prompt.txt
+          if [ "$ARM" = "memory" ] || [ "$ARM" = "capital" ]; then
+            cat /tmp/memory.txt >> /tmp/prompt.txt
+          fi
+          if [ "$ARM" = "capital" ]; then
+            cat /tmp/controller.txt >> /tmp/prompt.txt
+          fi
+
+      - name: Run isolated model process
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARM: ${{ matrix.arm }}
+        run: |
+          set +e
+          START=$(date +%s)
+          copilot \
+            --model=gpt-5.4 \
+            --mode=autopilot \
+            --max-autopilot-continues=5 \
+            --max-ai-credits=6 \
+            --no-ask-user \
+            --no-custom-instructions \
+            --no-remote \
+            --no-remote-export \
+            --allow-all-tools \
+            --deny-tool='url' \
+            --deny-tool='web_fetch' \
+            --deny-tool='task' \
+            --deny-tool='shell(curl:*)' \
+            --deny-tool='shell(wget:*)' \
+            --deny-tool='shell(gh:*)' \
+            --deny-tool='shell(git fetch:*)' \
+            --output-format=json \
+            -p "$(cat /tmp/prompt.txt)" > "copilot-${ARM}.jsonl" 2>&1
+          RC=$?
+          END=$(date +%s)
+          echo "$RC" > "copilot-${ARM}.exitcode"
+          echo "$((END-START))" > "copilot-${ARM}.seconds"
+          exit 0
+
+      - name: Kernel score target
+        id: score
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          set +e
+          source "$HOME/.elan/env"
+          START=$(date +%s)
+          lake build ArkLib.Data.Fin.Sigma > "lean-${ARM}.log" 2>&1
+          RC=$?
+          END=$(date +%s)
+          echo "$RC" > "lean-${ARM}.exitcode"
+          echo "$((END-START))" > "lean-${ARM}.seconds"
+          git diff -- ArkLib/Data/Fin/Sigma.lean > "${ARM}.patch"
+          python3 - <<'PY'
+          import os, pathlib, re, json
+          arm=os.environ['ARM']
+          text=pathlib.Path('ArkLib/Data/Fin/Sigma.lean').read_text()
+          start=text.index('theorem vflatten_eq_vappend_last')
+          end=text.index('\n@[simp]\ntheorem vflatten_splitSum', start)
+          region=text[start:end]
+          rc=int(pathlib.Path(f'lean-{arm}.exitcode').read_text().strip())
+          forbidden=any(tok in region for tok in ['sorry','admit','unsafeCast','native_decide'])
+          solved=(rc==0 and not forbidden)
+          summary={
+            'arm': arm,
+            'lean_exit': rc,
+            'target_forbidden_token': forbidden,
+            'solved': solved,
+            'agent_seconds': int(pathlib.Path(f'copilot-{arm}.seconds').read_text()),
+            'verify_seconds': int(pathlib.Path(f'lean-{arm}.seconds').read_text()),
+            'patch_lines': len(pathlib.Path(f'{arm}.patch').read_text().splitlines()),
+          }
+          pathlib.Path(f'score-{arm}.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2))
+          PY
+
+      - name: Upload arm evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-v1-${{ matrix.arm }}
+          path: |
+            copilot-${{ matrix.arm }}.jsonl
+            copilot-${{ matrix.arm }}.exitcode
+            copilot-${{ matrix.arm }}.seconds
+            lean-${{ matrix.arm }}.log
+            lean-${{ matrix.arm }}.exitcode
+            lean-${{ matrix.arm }}.seconds
+            ${{ matrix.arm }}.patch
+            score-${{ matrix.arm }}.json
