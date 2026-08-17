@@ -13,13 +13,14 @@ substitution internally. -/
 theorem occurrenceAxiomCompiler_ambientCommutativity (κ : Type) :
     OccurrenceAxiomCompiler (ambientCommutativityCtx κ) (ambientCommutativityLaw κ) := by
   intro hE β φ p
-  cases p.lhsLift with
+  rcases p with ⟨lhsRep, rhsRep, lhsLift, rhsLift⟩
+  cases lhsLift with
   | fork hl0 hl1 =>
     cases hl0 with
     | leaf _ l0 h0L =>
       cases hl1 with
       | leaf _ l1 h1L =>
-        cases p.rhsLift with
+        cases rhsLift with
         | fork hr1 hr0 =>
           cases hr1 with
           | leaf _ r1 h1R =>
