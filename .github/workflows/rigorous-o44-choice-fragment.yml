@@ -1,0 +1,40 @@
+name: Rigorous Lean O44 Equality Decision Choice Fragment
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o44
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O44 boundary
+        run: lake build equational_theories.EqualityDecisionChoiceFragment
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O44Audit.lean <<'EOF'
+          import equational_theories.EqualityDecisionChoiceFragment
+          #print axioms equalityDecisionUniformizer_iff_choiceFragment
+          #print axioms equalityDecisionFamily_pointwise_of_em
+          #print axioms Completeness'_of_em_and_equalityDecisionChoiceFragment
+          EOF
+          lake env lean /tmp/O44Audit.lean | tee /tmp/o44_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx\|Classical.choice' /tmp/o44_axioms.txt; then exit 1; fi
