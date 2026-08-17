@@ -1,0 +1,41 @@
+name: Rigorous Lean O47 Setoid Completeness
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o47-setoid
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O47 boundary
+        run: lake build equational_theories.SetoidCompletenessBoundary
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O47Audit.lean <<'EOF'
+          import equational_theories.SetoidCompletenessBoundary
+          #print axioms O47.eval_congr
+          #print axioms O47.SoundnessSetoid'_u
+          #print axioms O47.termSetoid_isModel
+          #print axioms O47.CompletenessSetoid'
+          EOF
+          lake env lean /tmp/O47Audit.lean | tee /tmp/o47_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx\|Classical.choice' /tmp/o47_axioms.txt; then exit 1; fi
