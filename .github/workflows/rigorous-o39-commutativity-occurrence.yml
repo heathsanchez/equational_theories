@@ -1,0 +1,50 @@
+name: Rigorous Lean O39 Commutativity Occurrence Route
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o39
+  workflow_dispatch:
+
+concurrency:
+  group: rigorous-o39-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O39 occurrence route
+        run: |
+          lake build equational_theories.AmbientCommutativityOccurrenceCompiler
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O39Audit.lean <<'EOF'
+          import equational_theories.AmbientCommutativityOccurrenceCompiler
+          #print axioms occurrenceAxiomCompiler_ambientCommutativity
+          #print axioms Completeness'_ambientCommutativity_occurrenceRoute
+          EOF
+          lake env lean /tmp/O39Audit.lean | tee /tmp/o39_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx' /tmp/o39_axioms.txt; then
+            exit 1
+          fi
+          if grep -E "(occurrenceAxiomCompiler_ambientCommutativity|Completeness'_ambientCommutativity_occurrenceRoute).*Classical.choice" /tmp/o39_axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O39.'
+            exit 1
+          fi
