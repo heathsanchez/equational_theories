@@ -41,13 +41,7 @@ theorem eq_of_idempotence_pair_derives_leaf {β : Type} {a b c : β}
   exact hac.trans hbc.symm
 
 /-- O35 reverse-strength theorem. Any computational idempotence normalizer that fixes leaves
-already provides decidable equality on the underlying variable type.
-
-The decision procedure inspects the canonical representative of `a ⋆ b`:
-* if it is a leaf, soundness in the powerset-union model forces `a = b`;
-* if it is a fork, assuming `a = b` would make the pair quotient-equal to `a`, so normalizer
-  invariance plus leaf-fixing would force a leaf, contradiction.
--/
+already provides decidable equality on the underlying variable type. -/
 def decidableEq_of_leafFixedIdempotenceNormalizer {β : Type}
     (N : LeafFixedIdempotenceNormalizer β) : DecidableEq β := fun a b =>
   match hnorm : N.data.normalize (Lf a ⋆ Lf b) with
@@ -60,7 +54,7 @@ def decidableEq_of_leafFixedIdempotenceNormalizer {β : Type}
       isFalse (by
         intro hab
         subst b
-        have hrel : RelOfLaws idempotenceCtx (Lf a ⋆ Lf a) (Lf a) :=
+        have hrel : RelOfLaws β idempotenceCtx (Lf a ⋆ Lf a) (Lf a) :=
           ⟨derive'_idempotence_step (Lf a)⟩
         have heq := N.data.normalize_respects hrel
         rw [hnorm, N.fixesLeaf a] at heq
