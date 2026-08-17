@@ -24,7 +24,7 @@ jobs:
           set +e
           START=$(date +%s)
           copilot \
-            --model=gpt-5-mini \
+            --model=auto \
             --mode=autopilot \
             --max-autopilot-continues=5 \
             --max-ai-credits=30 \
