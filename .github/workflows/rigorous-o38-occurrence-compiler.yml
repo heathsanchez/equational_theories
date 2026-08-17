@@ -1,0 +1,52 @@
+name: Rigorous Lean O38 Occurrence Compiler Boundary
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o38
+  workflow_dispatch:
+
+concurrency:
+  group: rigorous-o38-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O38 boundary
+        run: |
+          lake build equational_theories.OccurrenceAxiomCompilerBoundary
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O38Audit.lean <<'EOF'
+          import equational_theories.OccurrenceAxiomCompilerBoundary
+          #print axioms lawOccurrencePackage_exists
+          #print axioms FreeMagmaWithLaws.isModel_occurrenceCompilers
+          #print axioms Completeness'_occurrenceCompilers
+          #print axioms occurrenceAxiomCompiler_of_supportResources
+          EOF
+          lake env lean /tmp/O38Audit.lean | tee /tmp/o38_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx' /tmp/o38_axioms.txt; then
+            exit 1
+          fi
+          if grep -E "(lawOccurrencePackage_exists|isModel_occurrenceCompilers|Completeness'_occurrenceCompilers|occurrenceAxiomCompiler_of_supportResources).*Classical.choice" /tmp/o38_axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O38.'
+            exit 1
+          fi
