@@ -1,0 +1,53 @@
+name: Rigorous Lean O35 Idempotence Reverse Strength
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o35
+  workflow_dispatch:
+
+concurrency:
+  group: rigorous-o35-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O35 separator
+        run: |
+          lake build equational_theories.IdempotenceNormalizerBoundary
+          lake build equational_theories.IdempotenceNormalizerReverseStrength
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O35Audit.lean <<'EOF'
+          import equational_theories.IdempotenceNormalizerReverseStrength
+          #print axioms eq_of_idempotence_pair_derives_leaf
+          #print axioms decidableEq_of_leafFixedIdempotenceNormalizer
+          #print axioms leafFixedIdempotenceNormalizer_of_decidableEq
+          #print axioms nonempty_leafFixedNormalizer_iff_nonempty_decidableEq
+          EOF
+          lake env lean /tmp/O35Audit.lean | tee /tmp/o35_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx' /tmp/o35_axioms.txt; then
+            exit 1
+          fi
+          if grep -E "(eq_of_idempotence_pair_derives_leaf|decidableEq_of_leafFixedIdempotenceNormalizer|leafFixedIdempotenceNormalizer_of_decidableEq|nonempty_leafFixedNormalizer_iff_nonempty_decidableEq).*Classical.choice" /tmp/o35_axioms.txt; then
+            echo 'Classical.choice unexpectedly appears in O35.'
+            exit 1
+          fi
