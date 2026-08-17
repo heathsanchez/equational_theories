@@ -35,7 +35,14 @@ def totalSupportExtension_of_globalDecision_o45
     | isFalse _ => d
   refine ⟨τ, ?_⟩
   intro a ha
-  simp [τ, decideP (E.Mem a), ha]
+  change (match decideP (E.Mem a) with
+    | isTrue h => σ a h
+    | isFalse _ => d) = σ a ha
+  cases hdec : decideP (E.Mem a) with
+  | isTrue h =>
+      simp [hdec]
+  | isFalse h =>
+      exact False.elim (h ha)
 
 /-- O45 negative control. Merely wrapping the desired total function in `Nonempty` does not let a
 Prop-valued excluded-middle proof be eliminated while constructing the function's values.
