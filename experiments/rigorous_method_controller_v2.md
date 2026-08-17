@@ -251,3 +251,47 @@ O32 establishes sufficiency of computational equality for the obvious leaf-prese
 The next separator therefore reverses the implication: determine whether a natural computational idempotence-normalizer interface itself exposes equality-discrimination power, while preserving the Prop/Type distinctions learned earlier.
 
 This is a direct example of the v2 rule: after a successful intervention, reverse-test whether the added resource was necessary or merely sufficient before broadening again.
+
+## 13. Review 2 — O35/O36 route-relative necessity
+
+This review is appended after both sides of the route comparison passed their kernel and axiom gates.
+
+### Verified contrast
+O35 proved, for the natural leaf-fixed computational O29 normalizer interface for idempotence:
+
+`Nonempty (LeafFixedIdempotenceNormalizer β) ↔ Nonempty (DecidableEq β)`.
+
+The forward implication is not inferred from the implementation. It inspects the canonical representative of `Lf a ⋆ Lf b` and uses soundness in the powerset-union idempotent model to recover equality discrimination. The audited reverse-strength theorems use at most `[propext, Quot.sound]`; no `Classical.choice` or `sorryAx`.
+
+O36 then solved the same idempotence completeness problem by reusing O11's singleton-support route. The ambient theory lives over `PUnit ⊕ κ` for completely arbitrary `κ`; the target theorem has no `[DecidableEq κ]` and no `[DecidableEq β]`. Its completeness audit is `[propext, Quot.sound]`.
+
+Therefore:
+
+`resource necessary for route ≠ resource necessary for problem`.
+
+### Controller change earned — ROUTE SELECT
+After `REUSE CHECK`, enumerate materially distinct admitted routes whose applicability conditions are satisfied. Compare their resource assumptions and expected acquisition/verification cost before deepening one route.
+
+Updated fragment:
+
+`SHARPEN → REUSE CHECK → ROUTE SELECT → cheapest/weakest-resource admissible route → VERIFY`.
+
+Route selection asks:
+- Which admitted capability families can close this residual?
+- What computational/logical resources does each route require?
+- Is a resource requirement intrinsic to the problem or only to one route?
+- Which route leaves the most reusable capital if costs are comparable?
+- Is there value in running a more expensive route as a separator even when a cheaper production route already solves the problem?
+
+### Important distinction
+O35 is still scientifically valuable even though O36 is the cheaper production route. O35 identifies a true boundary of the normalizer architecture. O36 shows why that boundary must not be generalized to the mathematical problem itself.
+
+So the controller now distinguishes:
+- **production route:** cheapest verified route to the target;
+- **information route:** experiment chosen because it sharply identifies a capability/representation boundary.
+
+These may be different.
+
+### Updated compact inner controller
+
+`FREEZE → SPLIT → SEPARATE → PRUNE → SHARPEN → REUSE CHECK → ROUTE SELECT → [BROADEN only if all admissible routes require it] → SOLVE/TEST → VERIFY → RETAIN → REPLAY`.
