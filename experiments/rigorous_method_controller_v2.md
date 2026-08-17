@@ -295,3 +295,73 @@ These may be different.
 ### Updated compact inner controller
 
 `FREEZE → SPLIT → SEPARATE → PRUNE → SHARPEN → REUSE CHECK → ROUTE SELECT → [BROADEN only if all admissible routes require it] → SOLVE/TEST → VERIFY → RETAIN → REPLAY`.
+
+## 14. Review 3 — O37–O42 proof-to-data uniformization
+
+This review is appended after the prospective route test and the O38/O39/O41/O42 boundary sequence passed their kernel and axiom gates. O40 is retained as a semantic negative.
+
+### What changed
+O37 prospectively validated `ROUTE SELECT`: for ambient commutativity the controller selected the already-admitted finite-support/resource route before attempting a sorting normalizer, and the route passed choice-free on the first scientific attempt.
+
+O38 then factored generic quotient-model completeness through an `OccurrenceAxiomCompiler`: occurrence-local quotient representatives can be chosen constructively, and if each admitted axiom can compile its occurrence-local representative trees into a derivability certificate, completeness follows without a `SupportRetract` premise. Existing support resources map into this compiler.
+
+O39 constructed that compiler directly for ambient commutativity without invoking `SupportRetract` or `SupportQuotientLift`. The only global total substitution remaining in the successful proof is the one passed to ordinary `derive'.SubstAx` for the central axiom instance.
+
+O40 attempted to derive Type-valued equality decisions directly from Prop-valued excluded middle. Lean rejected the large elimination from `p ∨ ¬p : Prop` into `Decidable p`. This is retained as a Prop/Type extraction boundary, not generalized beyond the kernel/representation being tested.
+
+O41 supplied a Type-valued global decision oracle `(p : Prop) → Decidable p`; generic completeness then passed with no `Classical.choice`. The oracle-to-`DecidableEq` conversion itself has no axioms; the model/completeness theorems audit only `[propext, Quot.sound]`.
+
+O42 sharpened this further. Prop-level excluded middle can construct `∀ a b, Nonempty (Decidable (a = b))` because the target remains Prop-valued. An explicit equality-decision uniformizer then assembles those pointwise witnesses into `Nonempty (DecidableEq α)`, which is sufficient for generic completeness. The two factorization lemmas audit with no axioms; final completeness uses only `[propext, Quot.sound]`.
+
+### New residual category — PROOF-TO-DATA UNIFORMIZATION
+Several previously separate obstructions now share one causal role:
+- O17: materializing globally coherent occurrence data exposes equality discrimination;
+- O35: a leaf-fixed computational idempotence normalizer exposes equality discrimination;
+- O40: local Prop-level alternatives cannot be eliminated directly into Type-valued decision data;
+- O42: those local alternatives exist pointwise, and the missing step is their uniformization into one coherent computational function.
+
+Controller vocabulary therefore adds:
+
+`PROOF-TO-DATA UNIFORMIZATION`
+
+for residuals where local/propositional existence or alternatives are available, but the current architecture demands one coherent Type-valued selector, decision function, representative map, index, or strategy.
+
+Do not label such a residual merely `CHOICE` when a much narrower family can be named. Identify the exact family being uniformized.
+
+For the current completeness route the concrete instance is:
+
+`EQUALITY-DECISION UNIFORMIZATION`.
+
+This is a sufficient resource for the current support/ordinary-`SubstAx` route. It is **not** claimed necessary for completeness itself.
+
+### Interface-localization rule
+O39 localizes the remaining total substitution to one proof constructor: ordinary `derive'.SubstAx`.
+
+When repeated separators show that upstream representation/resource problems disappear except at one constructor or interface, move the next representation experiment to that interface rather than rebuilding upstream machinery.
+
+Updated decision rule:
+
+`LOCALIZE DATA DEMAND → CHANGE THE SMALLEST INTERFACE THAT IMPOSES IT → KEEP TRANSLATION-BACK COST EXPLICIT`.
+
+For the current line this licenses testing the already-existing support-local axiom rule `deriveSupport'.SubstAxSupport`, while preserving the ordinary-derivation translation as a separate residual rather than hiding it.
+
+### Necessity discipline reinforced
+A resource extracted from one architecture must not be promoted to problem-level necessity without a reverse theorem at the appropriate scope.
+
+O35 earned route-level necessity for a specific normalizer interface. O42 currently earns only sufficiency for a generic support-resource route. Ordinary completeness is Prop-valued, so no Type-valued uniformizer is inferred from completeness itself.
+
+### Operational controller lesson — verification-cost leakage
+A documentation/benchmark commit on an active science branch restarted an expensive O38 workflow even though the theorem under test had not changed.
+
+Hence:
+- keep method notes, benchmark bookkeeping, and unrelated documentation off active science branches;
+- mutate an active verifier branch only when the scientific object or its direct verifier must change;
+- count avoidable CI restarts as **verification-cost leakage** in controller evaluation.
+
+### Updated compact fragment
+
+`SHARPEN → REUSE CHECK → ROUTE SELECT → LOCALIZE DATA DEMAND → [BROADEN only at licensed interface] → VERIFY`.
+
+When the residual is proof-to-data:
+
+`LOCAL EXISTENCE/ALTERNATIVES → NAME REQUIRED UNIFORM DATA → TEST POINTWISE VS UNIFORM SEPARATOR → LOCALIZE THE CONSTRUCTOR DEMANDING UNIFORMITY → CHANGE THAT INTERFACE OR SUPPLY THE NARROWEST UNIFORMIZER`.
