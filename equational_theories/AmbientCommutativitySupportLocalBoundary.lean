@@ -8,7 +8,7 @@ open Law
 calculus without constructing any total `(Bool ⊕ κ) → FreeMagma β` substitution.
 
 Only the two variables that actually occur in the law are assigned representatives. -/
-theorem deriveSupport'_ambientCommutativity_instance
+def deriveSupport'_ambientCommutativity_instance
     {κ β : Type} (a b : FreeMagma β) :
     deriveSupport' (ambientCommutativityCtx κ) ((a ⋆ b) ≃ (b ⋆ a)) := by
   have hE : ambientCommutativityLaw κ ∈ ambientCommutativityCtx κ := by
@@ -19,15 +19,15 @@ theorem deriveSupport'_ambientCommutativity_instance
       | Sum.inl false => a
       | Sum.inl true => b
       | Sum.inr k => False.elim (by
-          have : ¬ (ambientCommutativityLaw κ).Mem (Sum.inr k) := by
-            simp [ambientCommutativityLaw]
-          exact this hx)
+          have hfalse : False := by
+            simpa [Law.MagmaLaw.Mem, ambientCommutativityLaw, FreeMagma.Mem] using hx
+          exact hfalse)
   simpa [ambientCommutativityLaw, Law.MagmaLaw.supportSubst, FreeMagma.supportSubst, σ] using
     (deriveSupport'.SubstAxSupport hE σ)
 
 /-- The ordinary derivation architecture can consume the same support-local certificate once a
 source-variable equality decision is supplied. This keeps the translation-back boundary explicit. -/
-theorem derive'_ambientCommutativity_instance_of_decidableEq
+def derive'_ambientCommutativity_instance_of_decidableEq
     {κ β : Type} [DecidableEq (Bool ⊕ κ)] (a b : FreeMagma β) :
     ambientCommutativityCtx κ ⊢' ((a ⋆ b) ≃ (b ⋆ a)) :=
   derive'_of_deriveSupport'_decidable (deriveSupport'_ambientCommutativity_instance a b)
