@@ -1,0 +1,39 @@
+name: Rigorous Lean O43 Support Local Boundary
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o43
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O43 boundary
+        run: lake build equational_theories.AmbientCommutativitySupportLocalBoundary
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O43Audit.lean <<'EOF'
+          import equational_theories.AmbientCommutativitySupportLocalBoundary
+          #print axioms deriveSupport'_ambientCommutativity_instance
+          #print axioms derive'_ambientCommutativity_instance_of_decidableEq
+          EOF
+          lake env lean /tmp/O43Audit.lean | tee /tmp/o43_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx\|Classical.choice' /tmp/o43_axioms.txt; then exit 1; fi
