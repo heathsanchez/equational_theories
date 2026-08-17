@@ -34,11 +34,19 @@ theorem reduce_to_new_axioms_capital
       simp [Eq1729.R, Eq1729.L, SM_op_eq_add]
     SM_sat_1729 := SM_obeys_1729
     axiom_1 := by
-      intro a
-      simp only [Eq1729.L', SM_square_square_eq_zero, Equiv.coe_fn_mk]
+      intro a x
+      simp only [Eq1729.L', SM_square_square_eq_zero, Equiv.coe_fn_mk, Function.comp_apply]
+      apply (R' a).symm.injective
+      unfold axiom_i' at h_i'
+      have hi (t : N) : L₀' (L₀' t) = (R' 0).symm t := congrFun h_i' t
+      symm
       calc
-        _ = (R' (S a)).symm ∘ (L₀' ∘ (R' 0) ∘ ((R' a) ∘ (R' a).symm) ∘ L₀') ∘ (R' (S a)) := rfl
-        _ = _ := by simp [L₀'_R'0_L₀'_eq_id h_i']
+        (R' 0).symm (L₀' (R' 0 (R' (S a) x)))
+            = L₀' (L₀' (L₀' (R' 0 (R' (S a) x)))) := by
+                rw [hi]
+        _ = L₀' ((R' 0).symm (R' 0 (R' (S a) x))) := by
+                rw [hi]
+        _ = L₀' (R' (S a) x) := by simp
     axiom_21 := by
       intro a b y h
       exact R'_axiom_iia a b y h
