@@ -104,7 +104,7 @@ jobs:
             --model=gpt-5.4 \
             --mode=autopilot \
             --max-autopilot-continues=5 \
-            --max-ai-credits=6 \
+            --max-ai-credits=30 \
             --no-ask-user \
             --no-custom-instructions \
             --no-remote \
@@ -140,17 +140,19 @@ jobs:
           echo "$((END-START))" > "lean-${ARM}.seconds"
           git diff -- ArkLib/Data/Fin/Sigma.lean > "${ARM}.patch"
           python3 - <<'PY'
-          import os, pathlib, re, json
+          import os, pathlib, json
           arm=os.environ['ARM']
           text=pathlib.Path('ArkLib/Data/Fin/Sigma.lean').read_text()
           start=text.index('theorem vflatten_eq_vappend_last')
           end=text.index('\n@[simp]\ntheorem vflatten_splitSum', start)
           region=text[start:end]
           rc=int(pathlib.Path(f'lean-{arm}.exitcode').read_text().strip())
+          agent_rc=int(pathlib.Path(f'copilot-{arm}.exitcode').read_text().strip())
           forbidden=any(tok in region for tok in ['sorry','admit','unsafeCast','native_decide'])
           solved=(rc==0 and not forbidden)
           summary={
             'arm': arm,
+            'agent_exit': agent_rc,
             'lean_exit': rc,
             'target_forbidden_token': forbidden,
             'solved': solved,
