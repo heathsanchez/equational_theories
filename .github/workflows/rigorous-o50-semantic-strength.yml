@@ -1,0 +1,40 @@
+name: Rigorous Lean O50 Setoid Semantic Strength
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o50-semantic-strength
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O50 boundary
+        run: lake build equational_theories.SetoidSemanticStrength
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O50Audit.lean <<'EOF'
+          import equational_theories.SetoidSemanticStrength
+          #print axioms O50.satisfiesSetoid_equality_iff
+          #print axioms O50.modelsSetoid_to_ordinary
+          #print axioms O50.ordinary_iff_setoid_of_sourceLift
+          EOF
+          lake env lean /tmp/O50Audit.lean | tee /tmp/o50_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx\|Classical.choice' /tmp/o50_axioms.txt; then exit 1; fi
