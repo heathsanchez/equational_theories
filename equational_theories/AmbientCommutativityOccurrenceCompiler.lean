@@ -23,9 +23,9 @@ theorem occurrenceAxiomCompiler_ambientCommutativity (κ : Type) :
       embed (ambientCommutativityCtx κ) p.lhsRep =
           (ambientCommutativityLaw κ).lhs ⬝ φ :=
         (occurrenceLift_eval_eq_embed p.lhsLift).symm
-      _ = φ (Sum.inl false) ⋆ φ (Sum.inl true) := by
+      _ = φ (Sum.inl false) ◇ φ (Sum.inl true) := by
         rfl
-      _ = embed (ambientCommutativityCtx κ) a ⋆
+      _ = embed (ambientCommutativityCtx κ) a ◇
           embed (ambientCommutativityCtx κ) b := by rw [ha', hb']
       _ = embed (ambientCommutativityCtx κ) (a ⋆ b) :=
         (embed_fork (ambientCommutativityCtx κ) a b).symm
@@ -33,10 +33,10 @@ theorem occurrenceAxiomCompiler_ambientCommutativity (κ : Type) :
     apply FreeMagmaWithLaws.eq.mp
     calc
       embed (ambientCommutativityCtx κ) (b ⋆ a) =
-          embed (ambientCommutativityCtx κ) b ⋆
+          embed (ambientCommutativityCtx κ) b ◇
             embed (ambientCommutativityCtx κ) a :=
         embed_fork (ambientCommutativityCtx κ) b a
-      _ = φ (Sum.inl true) ⋆ φ (Sum.inl false) := by rw [hb', ha']
+      _ = φ (Sum.inl true) ◇ φ (Sum.inl false) := by rw [hb', ha']
       _ = (ambientCommutativityLaw κ).rhs ⬝ φ := by
         rfl
       _ = embed (ambientCommutativityCtx κ) p.rhsRep :=
