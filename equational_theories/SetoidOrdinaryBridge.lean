@@ -17,7 +17,7 @@ def qembed {G : Type*} [Magma G] (S : SetoidMagma G) (x : G) : QuotMagma S :=
 /-- The setoid congruence makes the quotient inherit the magma operation constructively. -/
 instance quotMagmaInst {G : Type*} [Magma G] (S : SetoidMagma G) : Magma (QuotMagma S) where
   op := Quotient.lift₂ (fun x y => qembed S (x ◇ y)) <| by
-    intro a a' ha b b' hb
+    intro a b a' b' ha hb
     exact Quotient.sound (S.op_congr ha hb)
 
 @[simp] theorem qembed_op {G : Type*} [Magma G] (S : SetoidMagma G) (x y : G) :
@@ -49,6 +49,7 @@ theorem quotient_isModel_of_sourceLift {α G : Type} [Magma G]
   obtain ⟨σ, hσ⟩ := hLift φ
   have hfun : φ = qembed S ∘ σ := funext fun a => hσ a
   rw [hfun]
+  simp only [satisfiesPhi]
   rw [eval_qembed, eval_qembed]
   exact Quotient.sound (hS A mem σ)
 
@@ -66,6 +67,7 @@ theorem ordinary_to_setoid_of_sourceLift {α β : Type}
   have hQ : QuotMagma S ⊧ Γ := quotient_isModel_of_sourceLift S hS (hLift G S)
   have hEq : QuotMagma S ⊧ E := hOrd _ hQ
   have hφ := hEq (qembed S ∘ φ)
+  simp only [satisfiesPhi] at hφ
   rw [eval_qembed, eval_qembed] at hφ
   exact Quotient.exact hφ
 
