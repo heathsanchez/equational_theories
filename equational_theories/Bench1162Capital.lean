@@ -36,17 +36,19 @@ theorem reduce_to_new_axioms_capital
     axiom_1 := by
       intro a x
       simp only [Eq1729.L', SM_square_square_eq_zero, Equiv.coe_fn_mk, Function.comp_apply]
-      apply (R' a).symm.injective
       unfold axiom_i' at h_i'
       have hi (t : N) : L₀' (L₀' t) = (R' 0).symm t := congrFun h_i' t
-      symm
-      calc
-        (R' 0).symm (L₀' (R' 0 (R' (S a) x)))
-            = L₀' (L₀' (L₀' (R' 0 (R' (S a) x)))) := by
-                rw [hi]
-        _ = L₀' ((R' 0).symm (R' 0 (R' (S a) x))) := by
-                rw [hi]
-        _ = L₀' (R' (S a) x) := by simp
+      have hinner :
+          (R' 0).symm (L₀' (R' 0 (R' (S a) x))) =
+            L₀' (R' (S a) x) := by
+        calc
+          (R' 0).symm (L₀' (R' 0 (R' (S a) x)))
+              = L₀' (L₀' (L₀' (R' 0 (R' (S a) x)))) :=
+                  (hi (L₀' (R' 0 (R' (S a) x)))).symm
+          _ = L₀' ((R' 0).symm (R' 0 (R' (S a) x))) := by
+                  rw [hi (R' 0 (R' (S a) x))]
+          _ = L₀' (R' (S a) x) := by simp
+      exact congrArg (fun z => (R' a).symm z) hinner.symm
     axiom_21 := by
       intro a b y h
       exact R'_axiom_iia a b y h
