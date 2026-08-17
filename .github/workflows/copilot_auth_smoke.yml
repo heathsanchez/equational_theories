@@ -23,7 +23,25 @@ jobs:
         run: |
           set +e
           START=$(date +%s)
-          copilot --model=auto --max-ai-credits=30 --no-ask-user --no-custom-instructions --no-remote --no-remote-export --output-format=json -p "Reply exactly READY" > smoke.jsonl 2>&1
+          copilot \
+            --model=gpt-5-mini \
+            --mode=autopilot \
+            --max-autopilot-continues=5 \
+            --max-ai-credits=30 \
+            --no-ask-user \
+            --no-custom-instructions \
+            --no-remote \
+            --no-remote-export \
+            --allow-all-tools \
+            --deny-tool='url' \
+            --deny-tool='web_fetch' \
+            --deny-tool='task' \
+            --deny-tool='shell(curl:*)' \
+            --deny-tool='shell(wget:*)' \
+            --deny-tool='shell(gh:*)' \
+            --deny-tool='shell(git fetch:*)' \
+            --output-format=json \
+            -p "Reply exactly READY" > smoke.jsonl 2>&1
           RC=$?
           END=$(date +%s)
           echo "exit=$RC"
