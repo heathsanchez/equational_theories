@@ -1,0 +1,203 @@
+name: Verified Compounding Graded v1
+
+on:
+  push:
+    branches: [bench/verified-compounding-graded-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  copilot-requests: write
+
+jobs:
+  arm:
+    name: ${{ matrix.task }}-${{ matrix.arm }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [easy, medium, hard]
+        arm: [cold, memory, capital]
+    steps:
+      - name: Set frozen task metadata
+        shell: bash
+        run: |
+          case "${{ matrix.task }}" in
+            easy)
+              echo 'REF=aa51dcb012f7cb514ef5f86ccaff59811a2a37f3' >> "$GITHUB_ENV"
+              echo 'PATH_TARGET=ArkLib/Data/Fin/Sigma.lean' >> "$GITHUB_ENV"
+              echo 'MODULE=ArkLib.Data.Fin.Sigma' >> "$GITHUB_ENV"
+              echo 'THEOREM=dflatten_splitSum' >> "$GITHUB_ENV"
+              ;;
+            medium)
+              echo 'REF=b12ea04693879742ffcb963b1c1671324ec2bf84' >> "$GITHUB_ENV"
+              echo 'PATH_TARGET=ArkLib/Data/MvPolynomial/Degrees.lean' >> "$GITHUB_ENV"
+              echo 'MODULE=ArkLib.Data.MvPolynomial.Degrees' >> "$GITHUB_ENV"
+              echo 'THEOREM=distanceLE_mvPolynomial_degreeLE' >> "$GITHUB_ENV"
+              ;;
+            hard)
+              echo 'REF=646fb08582d0254b6eedd238dcb2ba9a13153fcb' >> "$GITHUB_ENV"
+              echo 'PATH_TARGET=ArkLib/Data/Fin/Sigma.lean' >> "$GITHUB_ENV"
+              echo 'MODULE=ArkLib.Data.Fin.Sigma' >> "$GITHUB_ENV"
+              echo 'THEOREM=vflatten_eq_vappend_last' >> "$GITHUB_ENV"
+              ;;
+          esac
+
+      - name: Checkout frozen unseen task
+        uses: actions/checkout@v6
+        with:
+          repository: Verified-zkEVM/ArkLib
+          ref: ${{ env.REF }}
+          fetch-depth: 1
+
+      - name: Sever upstream lookup path
+        run: git remote remove origin
+
+      - name: Install Lean toolchain manager
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Validate frozen baseline environment
+        run: |
+          source "$HOME/.elan/env"
+          lake build "$MODULE"
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Freeze arm prompt
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          cat > /tmp/base_prompt.txt <<EOF
+          You are in a frozen historical Lean repository checkout. Solve exactly one existing proof hole:
+          $PATH_TARGET theorem $THEOREM.
+
+          Hard evidence rules:
+          - Do not use the internet, GitHub, PRs, historical patches, or accepted solutions.
+          - Do not weaken/change the theorem statement.
+          - Do not add axioms, sorry, admit, unsafeCast, or native_decide.
+          - Stay on the frozen checkout. You may inspect nearby source/library code already present locally.
+          - Edit only $PATH_TARGET.
+          - Use Lean/lake as verifier. Keep iterating within the fixed budget until the target theorem builds or you reach a named obstruction.
+          - At the end leave your best patch in the working tree.
+          EOF
+          cat > /tmp/memory.txt <<'EOF'
+
+          VERIFIED PRIOR RESULTS MEMORY
+          Previous verified work found reusable patterns involving support-sensitive evaluation; finite-support versus total-interface distinctions; Prop-versus-Type proof/data boundaries; canonical normalizers; reuse of nearby library lemmas; separating infrastructure failures from semantic residuals; and successful Lean proof repairs where broad-looking problems collapsed to a small local algebraic, cast, congruence, or transport obligation. These are prior outcomes/examples only; no explicit control policy is supplied.
+          EOF
+          cat > /tmp/controller.txt <<'EOF'
+
+          RIGOROUS CONTROLLER CAPITAL
+          1. Freeze task/evidence boundary before search.
+          2. Classify verifier failures as infrastructure or semantic.
+          3. Split semantic residuals into rival explanations before broadening.
+          4. Run the smallest separator and prune falsified branches.
+          5. REUSE CHECK: prefer existing verified/library mechanisms before inventing machinery.
+          6. ROUTE SELECT: compare admissible proof routes and resource costs before deepening one.
+          7. INVARIANT AUDIT before replacing a global interface.
+          8. Treat proof-to-data / Prop-to-Type uniformization as a named residual.
+          9. Localize data requirements to the smallest constructor/interface imposing them.
+          10. Preserve negative results and exact scope.
+          11. Periodically zoom out and compress repeated verified structure only after transfer/ablation.
+          12. Lean/kernel verdicts are hard evidence; prose plausibility is not.
+          EOF
+          cp /tmp/base_prompt.txt /tmp/prompt.txt
+          if [ "$ARM" = memory ] || [ "$ARM" = capital ]; then cat /tmp/memory.txt >> /tmp/prompt.txt; fi
+          if [ "$ARM" = capital ]; then cat /tmp/controller.txt >> /tmp/prompt.txt; fi
+
+      - name: Run isolated model process
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARM: ${{ matrix.arm }}
+        run: |
+          set +e
+          START=$(date +%s)
+          copilot \
+            --model=auto \
+            --mode=autopilot \
+            --max-autopilot-continues=5 \
+            --max-ai-credits=30 \
+            --no-ask-user \
+            --no-custom-instructions \
+            --no-remote \
+            --no-remote-export \
+            --allow-all-tools \
+            --deny-tool='url' \
+            --deny-tool='web_fetch' \
+            --deny-tool='task' \
+            --deny-tool='shell(curl:*)' \
+            --deny-tool='shell(wget:*)' \
+            --deny-tool='shell(gh:*)' \
+            --deny-tool='shell(git fetch:*)' \
+            --output-format=json \
+            -p "$(cat /tmp/prompt.txt)" > "copilot-${{ matrix.task }}-${ARM}.jsonl" 2>&1
+          echo $? > "copilot-${{ matrix.task }}-${ARM}.exitcode"
+          END=$(date +%s)
+          echo "$((END-START))" > "copilot-${{ matrix.task }}-${ARM}.seconds"
+          exit 0
+
+      - name: Kernel score target
+        env:
+          ARM: ${{ matrix.arm }}
+          TASK: ${{ matrix.task }}
+        run: |
+          set +e
+          source "$HOME/.elan/env"
+          START=$(date +%s)
+          lake build "$MODULE" > "lean-${TASK}-${ARM}.log" 2>&1
+          RC=$?
+          END=$(date +%s)
+          git diff -- "$PATH_TARGET" > "${TASK}-${ARM}.patch"
+          python3 - <<'PY'
+          import os, pathlib, json, re
+          task=os.environ['TASK']; arm=os.environ['ARM']
+          p=pathlib.Path(os.environ['PATH_TARGET']); text=p.read_text()
+          name=os.environ['THEOREM']
+          i=text.find(name)
+          tail=text[i:i+5000] if i>=0 else ''
+          # Bound the target region at the next top-level declaration when possible.
+          m=re.search(r'\n(?:@\[[^\n]*\]\n)?(?:theorem|lemma|def|instance)\s+', tail[len(name):])
+          region=tail[:len(name)+(m.start() if m else len(tail))]
+          forbidden=any(tok in region for tok in ['sorry','admit','unsafeCast','native_decide'])
+          raw=pathlib.Path(f'copilot-{task}-{arm}.jsonl').read_text(errors='replace')
+          resolved=[]; models=[]; model_calls=0; tools=0
+          for line in raw.splitlines():
+            try: o=json.loads(line)
+            except: continue
+            typ=o.get('type'); d=o.get('data') or {}
+            if typ=='session.auto_mode_resolved' and d.get('chosenModel'): resolved.append(d['chosenModel'])
+            if typ=='model.call_start':
+              model_calls+=1
+              if d.get('model'): models.append(d['model'])
+            if typ in ('tool.execution_start','assistant.tool_request','tool.call_start'): tools+=1
+          summary={
+            'task':task,'arm':arm,'theorem':name,
+            'agent_exit':int(pathlib.Path(f'copilot-{task}-{arm}.exitcode').read_text()),
+            'lean_exit':RC,'target_forbidden_token':forbidden,
+            'solved':RC==0 and not forbidden,
+            'resolved_models':sorted(set(resolved)),
+            'model_call_models':sorted(set(models)),
+            'model_calls':model_calls,'tool_calls_observed':tools,
+            'agent_seconds':int(pathlib.Path(f'copilot-{task}-{arm}.seconds').read_text()),
+            'verify_seconds':END-START,
+            'patch_lines':len(pathlib.Path(f'{task}-{arm}.patch').read_text().splitlines())}
+          pathlib.Path(f'score-{task}-{arm}.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2))
+          PY
+          exit 0
+
+      - name: Upload arm evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: graded-v1-${{ matrix.task }}-${{ matrix.arm }}
+          path: |
+            copilot-${{ matrix.task }}-${{ matrix.arm }}.jsonl
+            copilot-${{ matrix.task }}-${{ matrix.arm }}.exitcode
+            copilot-${{ matrix.task }}-${{ matrix.arm }}.seconds
+            lean-${{ matrix.task }}-${{ matrix.arm }}.log
+            ${{ matrix.task }}-${{ matrix.arm }}.patch
+            score-${{ matrix.task }}-${{ matrix.arm }}.json
