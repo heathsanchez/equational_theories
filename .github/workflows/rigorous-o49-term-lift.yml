@@ -1,0 +1,40 @@
+name: Rigorous Lean O49 Term Lift Equivalence
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o49-term-lift
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O49 boundary
+        run: lake build equational_theories.TermSetoidLiftEquivalence
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O49Audit.lean <<'EOF'
+          import equational_theories.TermSetoidLiftEquivalence
+          #print axioms O49.sourceValuationLift_termSetoid_iff
+          #print axioms O49.termSetoid_sourceLift_of_PhiAsSubst
+          #print axioms O49.phiAsSubstSource_of_termSetoid_sourceLift
+          EOF
+          lake env lean /tmp/O49Audit.lean | tee /tmp/o49_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx' /tmp/o49_axioms.txt; then exit 1; fi
