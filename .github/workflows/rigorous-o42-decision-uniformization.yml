@@ -1,0 +1,40 @@
+name: Rigorous Lean O42 Decision Uniformization Boundary
+
+on:
+  push:
+    branches:
+      - agent/rigorous-lean-capital-flywheel-o42
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Lake packages
+        run: |
+          for i in 1 2 3; do
+            lake update && break
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 5
+          done
+      - name: Build O42 boundary
+        run: lake build equational_theories.CompletenessDecisionUniformizationBoundary
+      - name: Axiom audit
+        run: |
+          set -o pipefail
+          cat > /tmp/O42Audit.lean <<'EOF'
+          import equational_theories.CompletenessDecisionUniformizationBoundary
+          #print axioms pointwiseEqualityDecision_of_em
+          #print axioms nonemptyDecidableEq_of_em_uniformizer
+          #print axioms Completeness'_of_em_and_equalityDecisionUniformizer
+          EOF
+          lake env lean /tmp/O42Audit.lean | tee /tmp/o42_axioms.txt
+          if grep -q 'unknownIdentifier\|sorryAx\|Classical.choice' /tmp/o42_axioms.txt; then exit 1; fi
