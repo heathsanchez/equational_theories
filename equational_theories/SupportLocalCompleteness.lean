@@ -70,10 +70,4 @@ theorem SoundnessSupport' {α β : Type*} {Γ : Ctx α} {E : MagmaLaw β}
     (h : deriveSupport' Γ E) : modelsSupport Γ E :=
   fun _ _ => SoundnessSupport'_u h
 
-/-- Separator: ordinary satisfaction implies support satisfaction only when support assignments
-can be extended to total valuations. This is exactly the semantic bridge where O9/O19's
-SupportRetract resource enters. -/
-def SupportValuationExtension {α G : Type*} (E : MagmaLaw α) :=
-  ((a : α) → E.Mem a → G) → Nonempty {φ : α → G // ∀ a ha, φ a = (by exact fun a ha => (Classical.choice (show Nonempty G from ⟨φ a⟩))) a ha}
-
 end O46
