@@ -37,7 +37,7 @@ theorem eval_congr {α G : Type*} [Magma G] (S : SetoidMagma G)
   induction t with
   | Leaf a => exact h a
   | Fork l r ihl ihr =>
-      simpa [evalInMagma] using S.op_congr (ihl h) (ihr h)
+      simpa [evalInMagma] using S.op_congr ihl ihr
 
 /-- Soundness of ordinary derivations for setoid semantics. -/
 theorem SoundnessSetoid'_u {α β G : Type*} [Magma G]
@@ -49,13 +49,13 @@ theorem SoundnessSetoid'_u {α β G : Type*} [Magma G]
       simpa [satisfiesSetoidPhi, SubstEval] using H A mem (fun a => σ a ⬝ φ)
   | Ref =>
       intro _ φ
-      exact S.setoid.iseqv.1 _
+      exact S.setoid.refl _
   | @Sym t u _ ih =>
       intro H φ
-      exact S.setoid.iseqv.2.1 (ih H φ)
+      exact S.setoid.symm (ih H φ)
   | Trans h₁ h₂ ih₁ ih₂ =>
       intro H φ
-      exact S.setoid.iseqv.2.2 (ih₁ H φ) (ih₂ H φ)
+      exact S.setoid.trans (ih₁ H φ) (ih₂ H φ)
   | Cong h₁ h₂ ih₁ ih₂ =>
       intro H φ
       simpa [satisfiesSetoidPhi, evalInMagma] using S.op_congr (ih₁ H φ) (ih₂ H φ)
